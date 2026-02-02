@@ -1,33 +1,26 @@
 import React from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
-import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Button } from '@/components/ui/button';
-import { Star, MapPin, Waves, Trees, Palmtree, Wind } from 'lucide-react';
+import { Star, MapPin, Waves, Trees, Palmtree } from 'lucide-react';
 import BookingForm from '@/components/booking/BookingForm';
 import Testimonials from '@/components/home/Testimonials';
 import InteractiveMap from '@/components/home/InteractiveMap';
+import HeroCarousel from '@/components/home/HeroCarousel';
+import Image from 'next/image';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 export default function Home() {
-  const heroImage = PlaceHolderImages.find(img => img.id === 'hero-beach');
   const poolImage = PlaceHolderImages.find(img => img.id === 'infinity-pool');
   const suiteImage = PlaceHolderImages.find(img => img.id === 'luxury-suite');
 
   return (
     <div className="flex flex-col w-full">
-      {/* Hero Section */}
+      {/* Hero Section with Carousel */}
       <section className="relative h-[90vh] w-full overflow-hidden flex items-center justify-center">
-        {heroImage && (
-          <Image
-            src={heroImage.imageUrl}
-            alt={heroImage.description}
-            fill
-            className="object-cover animate-in fade-in duration-1000"
-            priority
-            data-ai-hint={heroImage.imageHint}
-          />
-        )}
-        <div className="absolute inset-0 hero-gradient" />
+        <HeroCarousel />
+        
+        <div className="absolute inset-0 hero-gradient pointer-events-none" />
+        
         <div className="relative z-10 text-center text-white px-4 max-w-4xl">
           <p className="text-secondary font-bold tracking-[0.4em] uppercase mb-4 animate-fade-in-up">
             Escape to Paradise
@@ -36,7 +29,7 @@ export default function Home() {
             Your Sanctuary <span className="text-secondary italic">By The Sea</span>
           </h1>
           <p className="text-lg md:text-xl font-body mb-10 max-w-2xl mx-auto opacity-95 animate-fade-in-up [animation-delay:400ms]">
-            Discover the perfect blend of modern luxury and Swahili soul on the pristine shores of Diani Beach.
+            Experience the perfect blend of modern luxury and Swahili soul on the pristine shores of Diani Beach.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up [animation-delay:600ms]">
             <Button size="lg" className="px-10 py-7 text-lg shadow-xl bg-primary text-primary-foreground hover:bg-primary/90" asChild>
