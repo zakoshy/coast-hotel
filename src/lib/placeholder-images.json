@@ -1,3 +1,58 @@
 {
-  "placeholderImages": []
+  "placeholderImages": [
+    {
+      "id": "hero-beach",
+      "description": "Aerial view of a pristine beach in Diani, Kenya",
+      "imageUrl": "https://images.unsplash.com/photo-1683277681900-bec76bbb96b2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxLZW55YW4lMjBiZWFjaHxlbnwwfHx8fDE3NzAwNzA4OTB8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "Kenyan beach"
+    },
+    {
+      "id": "luxury-suite",
+      "description": "Elegant luxury suite with Swahili decor and ocean view",
+      "imageUrl": "https://images.unsplash.com/photo-1759223198981-661cadbbff36?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxsdXh1cnklMjBob3RlbCUyMHN1aXRlfGVufDB8fHx8MTc3MDA3MDg5MXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "luxury hotel suite"
+    },
+    {
+      "id": "infinity-pool",
+      "description": "Infinity pool overlooking the Indian Ocean at sunset",
+      "imageUrl": "https://images.unsplash.com/photo-1600760380065-2fcdc9e73007?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxpbmZpbml0eSUyMHBvb2x8ZW58MHx8fHwxNzcwMDQyMjMzfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "infinity pool"
+    },
+    {
+      "id": "dining-seafood",
+      "description": "Gourmet seafood platter with a view of the ocean",
+      "imageUrl": "https://images.unsplash.com/photo-1765100479761-2359e22fbe16?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxnb3VybWV0JTIwc2VhZm9vZHxlbnwwfHx8fDE3NzAwNzA4OTF8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "gourmet seafood"
+    },
+    {
+      "id": "experience-snorkeling",
+      "description": "Snorkeling in the crystal clear waters of Kisite-Mpunguti",
+      "imageUrl": "https://images.unsplash.com/photo-1649828537676-a11ed4527547?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxzbm9ya2VsaW5nJTIwY29yYWx8ZW58MHx8fHwxNzcwMDcwODkxfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "snorkeling coral"
+    },
+    {
+      "id": "experience-safari",
+      "description": "Day trip safari at Shimba Hills National Reserve",
+      "imageUrl": "https://images.unsplash.com/photo-1731355776006-9567df865d94?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHx3aWxkbGlmZSUyMHNhZmFyaXxlbnwwfHx8fDE3NzAwNzA4OTF8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "wildlife safari"
+    },
+    {
+      "id": "hotel-exterior",
+      "description": "Modern Swahili-inspired hotel architecture with palm trees",
+      "imageUrl": "https://images.unsplash.com/photo-1755206302429-d768832d0adf?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxjb2FzdGFsJTIwYXJjaGl0ZWN0dXJlfGVufDB8fHx8MTc3MDA3MDg5MXww&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "coastal architecture"
+    },
+    {
+      "id": "swahili-breakfast",
+      "description": "Traditional coastal Kenyan breakfast with fresh fruits and mahamri",
+      "imageUrl": "https://images.unsplash.com/photo-1542367592-8849eb950fd8?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxzd2FoaWxpJTIwZm9vZHxlbnwwfHx8fDE3NzAwNzA4OTF8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "swahili food"
+    },
+    {
+      "id": "yoga-deck",
+      "description": "Sunrise yoga session on a wooden deck by the beach",
+      "imageUrl": "https://images.unsplash.com/photo-1506126613408-eca07ce68773?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxiZWFjaCUyMHlvZ2F8ZW58MHx8fHwxNzcwMDcwODkxfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "beach yoga"
+    }
+  ]
 }
