@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -9,6 +10,8 @@ import { cn } from '@/lib/utils';
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const pathname = usePathname();
+  const isHomePage = pathname === '/';
 
   useEffect(() => {
     const handleScroll = () => {
@@ -27,38 +30,41 @@ const Navbar = () => {
     { name: 'Offers', href: '/offers' },
   ];
 
+  // Determine if the navbar should have a solid background
+  const isSolid = scrolled || !isHomePage;
+  // Determine the text color for the links
+  const textColor = isSolid ? "text-foreground/80" : "text-white/90";
+  const brandColor = isSolid ? "text-primary" : "text-white";
+
   return (
     <nav
       className={cn(
         'fixed top-0 left-0 right-0 z-50 transition-all duration-500 px-6 py-4',
-        scrolled ? 'bg-white/95 backdrop-blur-md shadow-lg py-3' : 'bg-transparent'
+        isSolid ? 'bg-white/95 backdrop-blur-md shadow-lg py-3' : 'bg-transparent'
       )}
     >
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <Link href="/" className="flex flex-col">
           <span className={cn(
             "text-2xl font-headline font-bold leading-tight tracking-tight",
-            scrolled ? "text-primary" : "text-white"
+            brandColor
           )}>
             COASTAL SANDS
           </span>
-          <span className={cn(
-            "text-[10px] tracking-[0.3em] uppercase font-bold",
-            scrolled ? "text-secondary" : "text-secondary"
-          )}>
+          <span className="text-[10px] tracking-[0.3em] uppercase font-bold text-secondary">
             Diani • Kenya
           </span>
         </Link>
 
-        {/* Desktop Menu */}
-        <div className="hidden lg:flex items-center space-x-10">
+        {/* Desktop Menu - Visible on md screens and up (768px+) */}
+        <div className="hidden md:flex items-center space-x-8">
           {navLinks.map((link) => (
             <Link
               key={link.name}
               href={link.href}
               className={cn(
                 "text-sm font-bold tracking-wide hover:text-secondary transition-colors",
-                scrolled ? "text-foreground/80" : "text-white/90"
+                textColor
               )}
             >
               {link.name}
@@ -69,16 +75,16 @@ const Navbar = () => {
           </Button>
         </div>
 
-        {/* Mobile Menu Toggle */}
+        {/* Mobile Menu Toggle - Only visible on screens below md (768px) */}
         <button
-          className="lg:hidden"
+          className="md:hidden"
           onClick={() => setIsOpen(!isOpen)}
           aria-label="Toggle navigation"
         >
           {isOpen ? (
-            <X className={cn("h-8 w-8", scrolled ? "text-primary" : "text-white")} />
+            <X className={cn("h-8 w-8", isSolid ? "text-primary" : "text-white")} />
           ) : (
-            <Menu className={cn("h-8 w-8", scrolled ? "text-primary" : "text-white")} />
+            <Menu className={cn("h-8 w-8", isSolid ? "text-primary" : "text-white")} />
           )}
         </button>
       </div>
@@ -86,24 +92,26 @@ const Navbar = () => {
       {/* Mobile Menu Overlay */}
       <div
         className={cn(
-          "fixed inset-0 top-[80px] bg-background z-40 transition-transform duration-500 lg:hidden",
+          "fixed inset-0 top-[70px] bg-background z-40 transition-transform duration-500 md:hidden",
           isOpen ? "translate-x-0" : "translate-x-full"
         )}
       >
-        <div className="flex flex-col p-10 space-y-8">
+        <div className="flex flex-col p-10 space-y-8 h-full bg-white">
           {navLinks.map((link) => (
             <Link
               key={link.name}
               href={link.href}
               onClick={() => setIsOpen(false)}
-              className="text-3xl font-headline font-bold text-foreground hover:text-primary transition-colors"
+              className="text-3xl font-headline font-bold text-foreground hover:text-primary transition-colors border-b border-muted pb-4"
             >
               {link.name}
             </Link>
           ))}
-          <Button asChild className="w-full text-lg py-8 rounded-2xl" size="lg">
-            <Link href="/rooms#booking" onClick={() => setIsOpen(false)}>Reserve Your Oasis</Link>
-          </Button>
+          <div className="pt-4">
+            <Button asChild className="w-full text-lg py-8 rounded-2xl" size="lg">
+              <Link href="/rooms#booking" onClick={() => setIsOpen(false)}>Reserve Your Oasis</Link>
+            </Button>
+          </div>
         </div>
       </div>
     </nav>
