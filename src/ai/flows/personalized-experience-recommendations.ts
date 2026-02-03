@@ -1,3 +1,4 @@
+
 // src/ai/flows/personalized-experience-recommendations.ts
 'use server';
 /**
@@ -39,7 +40,7 @@ const PersonalizedExperienceOutputSchema = z.object({
   recommendations: z
     .array(z.string())
     .describe(
-      'A list of personalized experience and activity recommendations based on the guests preferences.'
+      'A list of 3-4 highly specific and appealing personalized experience and activity recommendations based on the guests preferences.'
     ),
 });
 export type PersonalizedExperienceOutput = z.infer<
@@ -56,14 +57,18 @@ const prompt = ai.definePrompt({
   name: 'personalizedExperiencePrompt',
   input: {schema: PersonalizedExperienceInputSchema},
   output: {schema: PersonalizedExperienceOutputSchema},
-  prompt: `You are a personalized travel concierge for a luxury hotel on the Kenyan coast. Based on the guest's preferences, provide a list of recommendations for experiences and activities.
+  prompt: `You are a high-end travel concierge for Coastal Sands Retreat, a luxury hotel on Diani Beach, Kenya. 
+Based on the guest's unique preferences, curate a list of 3 to 4 specific experiences or activities.
+
+Make the recommendations sound exclusive, luxurious, and deeply connected to the Kenyan coast. 
+Use evocative language that mentions the turquoise waters, white sands, and Swahili heritage.
 
 Guest Preferences:
 - Travel Style: {{{travelStyle}}}
 - Interests: {{{interests}}}
 - Budget: {{{budget}}}
 
-Recommendations:`,
+Return a list of short, catchy titles with a brief compelling description for each recommendation.`,
 });
 
 const personalizedExperienceRecommendationsFlow = ai.defineFlow(
