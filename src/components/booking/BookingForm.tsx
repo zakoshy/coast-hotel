@@ -29,6 +29,7 @@ import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from '@/hooks/use-toast';
 
 interface BookingFormProps {
   layout?: 'horizontal' | 'vertical';
@@ -38,6 +39,7 @@ type BookingStep = 'selection' | 'checking' | 'payment' | 'success';
 type PaymentMethod = 'card' | 'mpesa' | 'paypal';
 
 const BookingForm = ({ layout = 'vertical' }: BookingFormProps) => {
+  const { toast } = useToast();
   const [step, setStep] = useState<BookingStep>('selection');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('card');
   const [progress, setProgress] = useState(0);
@@ -50,6 +52,17 @@ const BookingForm = ({ layout = 'vertical' }: BookingFormProps) => {
 
   const handleStartBooking = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Strict Validation for Dates
+    if (!date.from || !date.to) {
+      toast({
+        variant: "destructive",
+        title: "Missing Dates",
+        description: "Please select both arrival and departure dates to continue.",
+      });
+      return;
+    }
+
     setStep('checking');
     setProgress(33);
     
@@ -62,6 +75,10 @@ const BookingForm = ({ layout = 'vertical' }: BookingFormProps) => {
 
   const handlePaymentSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // The inputs are marked as 'required', so browser validation handles empty fields.
+    // If we reach here, validation has passed.
+
     setStep('checking'); // Re-use checking for processing payment
     setProgress(85);
     
@@ -76,6 +93,7 @@ const BookingForm = ({ layout = 'vertical' }: BookingFormProps) => {
     setStep('selection');
     setProgress(0);
     setPaymentMethod('card');
+    setDate({ from: undefined, to: undefined });
   };
 
   return (
@@ -126,7 +144,7 @@ const BookingForm = ({ layout = 'vertical' }: BookingFormProps) => {
                         format(date.from, "LLL dd, y")
                       )
                     ) : (
-                      <span>Pick your dates</span>
+                      <span>Pick your dates *</span>
                     )}
                   </Button>
                 </PopoverTrigger>
@@ -145,7 +163,7 @@ const BookingForm = ({ layout = 'vertical' }: BookingFormProps) => {
 
             <div className={cn("flex-1 space-y-2", isHorizontal ? "w-full lg:w-48" : "w-full")}>
               <Label className="text-xs uppercase tracking-widest font-bold opacity-70">Guests</Label>
-              <Select defaultValue="2">
+              <Select defaultValue="2" required>
                 <SelectTrigger className="h-14 border-primary/20 bg-white hover:bg-primary/5 rounded-xl">
                   <Users className="mr-2 h-4 w-4 text-primary" />
                   <SelectValue placeholder="Guests" />
@@ -161,7 +179,7 @@ const BookingForm = ({ layout = 'vertical' }: BookingFormProps) => {
 
             <div className={cn("flex-1 space-y-2", isHorizontal ? "w-full lg:w-56" : "w-full")}>
               <Label className="text-xs uppercase tracking-widest font-bold opacity-70">Rate Type</Label>
-              <Select defaultValue="intl">
+              <Select defaultValue="intl" required>
                 <SelectTrigger className="h-14 border-primary/20 bg-white hover:bg-primary/5 rounded-xl">
                   <CreditCard className="mr-2 h-4 w-4 text-primary" />
                   <SelectValue placeholder="Resident?" />
@@ -229,14 +247,14 @@ const BookingForm = ({ layout = 'vertical' }: BookingFormProps) => {
                   <Label className="text-xs uppercase tracking-[0.2em] font-bold text-muted-foreground">Guest Information</Label>
                   <div className="space-y-4">
                     <div className="space-y-2">
-                      <Label>Full Name</Label>
+                      <Label>Full Name *</Label>
                       <div className="relative">
                         <User className="absolute left-3 top-3 h-4 w-4 text-primary/40" />
                         <Input placeholder="John Doe" className="pl-10 h-12 rounded-xl" required />
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label>Email Address</Label>
+                      <Label>Email Address *</Label>
                       <div className="relative">
                         <Mail className="absolute left-3 top-3 h-4 w-4 text-primary/40" />
                         <Input type="email" placeholder="john@example.com" className="pl-10 h-12 rounded-xl" required />
@@ -267,7 +285,7 @@ const BookingForm = ({ layout = 'vertical' }: BookingFormProps) => {
 
                   <TabsContent value="card" className="space-y-4">
                     <div className="space-y-2">
-                      <Label>Credit Card Number</Label>
+                      <Label>Credit Card Number *</Label>
                       <div className="relative">
                         <CardIcon className="absolute left-3 top-3 h-4 w-4 text-primary/40" />
                         <Input placeholder="0000 0000 0000 0000" className="pl-10 h-12 rounded-xl" required={paymentMethod === 'card'} />
@@ -275,11 +293,11 @@ const BookingForm = ({ layout = 'vertical' }: BookingFormProps) => {
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label>Expiry</Label>
+                        <Label>Expiry *</Label>
                         <Input placeholder="MM/YY" className="h-12 rounded-xl" required={paymentMethod === 'card'} />
                       </div>
                       <div className="space-y-2">
-                        <Label>CVC</Label>
+                        <Label>CVC *</Label>
                         <Input placeholder="123" className="h-12 rounded-xl" required={paymentMethod === 'card'} />
                       </div>
                     </div>
@@ -292,7 +310,7 @@ const BookingForm = ({ layout = 'vertical' }: BookingFormProps) => {
                       </p>
                     </div>
                     <div className="space-y-2">
-                      <Label>M-Pesa Phone Number</Label>
+                      <Label>M-Pesa Phone Number *</Label>
                       <div className="relative">
                         <Smartphone className="absolute left-3 top-3 h-4 w-4 text-green-600" />
                         <Input placeholder="+254 7XX XXX XXX" className="pl-10 h-12 rounded-xl border-green-200" required={paymentMethod === 'mpesa'} />
@@ -312,7 +330,7 @@ const BookingForm = ({ layout = 'vertical' }: BookingFormProps) => {
                   </TabsContent>
                 </Tabs>
 
-                <Button className={cn(
+                <Button type="submit" className={cn(
                   "w-full h-14 font-bold rounded-xl text-lg mt-4 shadow-lg transition-all",
                   paymentMethod === 'mpesa' ? "bg-green-600 hover:bg-green-700 text-white" : 
                   paymentMethod === 'paypal' ? "bg-blue-600 hover:bg-blue-700 text-white" :
