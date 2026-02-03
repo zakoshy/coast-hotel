@@ -9,6 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { Gift, Calendar, Percent, CreditCard, ChevronRight, Tag } from 'lucide-react';
 
 export default function OffersPage() {
+  const heroImage = PlaceHolderImages.find(img => img.id === 'hero-beach');
+
   const offers = [
     {
       id: 'honeymoon-special',
@@ -53,32 +55,39 @@ export default function OffersPage() {
   ];
 
   return (
-    <div className="pt-24 bg-background min-h-screen">
-      {/* Hero Header */}
-      <section className="bg-primary py-24 px-6 relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
-          <div className="absolute top-[-10%] right-[-5%] w-96 h-96 bg-white rounded-full blur-3xl" />
-          <div className="absolute bottom-[-10%] left-[-5%] w-96 h-96 bg-secondary rounded-full blur-3xl" />
-        </div>
+    <div className="bg-background min-h-screen">
+      {/* Cinematic Hero Header */}
+      <section className="relative h-[60vh] min-h-[500px] w-full flex items-center justify-center overflow-hidden">
+        {heroImage && (
+          <Image
+            src={heroImage.imageUrl}
+            alt="Special Offers Hero"
+            fill
+            className="object-cover"
+            priority
+            data-ai-hint="luxury beach"
+          />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/40 to-background" />
         
-        <div className="max-w-5xl mx-auto text-center relative z-10">
-          <Badge className="mb-6 px-4 py-1 bg-secondary text-white border-none font-bold uppercase tracking-widest">
+        <div className="relative z-10 max-w-5xl mx-auto px-6 text-center text-white">
+          <Badge className="mb-6 px-6 py-2 bg-secondary text-white border-none font-bold uppercase tracking-widest text-sm rounded-full">
             Exclusive Deals
           </Badge>
-          <h1 className="text-5xl md:text-7xl font-headline font-bold text-white mb-8">
+          <h1 className="text-5xl md:text-7xl font-headline font-bold mb-8 drop-shadow-2xl">
             The Art of <span className="text-secondary italic">Getting Away</span>
           </h1>
-          <p className="text-xl text-white/90 leading-relaxed max-w-3xl mx-auto">
+          <p className="text-xl md:text-2xl text-white/95 leading-relaxed max-w-3xl mx-auto drop-shadow-lg">
             Discover our curated collection of special offers and seasonal packages designed to make your Diani experience even more unforgettable.
           </p>
         </div>
       </section>
 
       {/* Offers Grid */}
-      <section className="py-24 px-6 max-w-7xl mx-auto">
+      <section className="py-24 px-6 max-w-7xl mx-auto relative z-20 -mt-10">
         <div className="grid md:grid-cols-2 gap-12">
           {offers.map((offer) => (
-            <Card key={offer.id} className="group overflow-hidden border-none shadow-2xl rounded-[2.5rem] flex flex-col lg:flex-row bg-white">
+            <Card key={offer.id} className="group overflow-hidden border-none shadow-2xl rounded-[2.5rem] flex flex-col lg:flex-row bg-white transition-all duration-500 hover:-translate-y-2">
               <div className="w-full lg:w-2/5 relative h-64 lg:h-auto overflow-hidden">
                 {offer.image && (
                   <Image
@@ -100,7 +109,7 @@ export default function OffersPage() {
                 <div>
                   <div className="flex items-center gap-3 text-secondary mb-4">
                     {offer.icon}
-                    <span className="text-sm font-bold uppercase tracking-wider">Limited Time</span>
+                    <span className="text-xs font-bold uppercase tracking-wider">Limited Time</span>
                   </div>
                   <h3 className="text-3xl font-headline font-bold text-primary mb-4">{offer.title}</h3>
                   <p className="text-muted-foreground mb-6 leading-relaxed">
@@ -119,7 +128,7 @@ export default function OffersPage() {
                   </div>
                 </div>
                 
-                <Button className="w-full lg:w-fit px-10 h-14 rounded-full text-lg font-bold" asChild>
+                <Button className="w-full lg:w-fit px-10 h-14 rounded-full text-lg font-bold shadow-lg" asChild>
                   <Link href="/rooms#booking">
                     Claim Offer
                     <ChevronRight className="ml-2 h-5 w-5" />
@@ -134,22 +143,22 @@ export default function OffersPage() {
       {/* Terms & CTA */}
       <section className="py-24 px-6 bg-muted/50">
         <div className="max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center justify-center p-4 bg-primary/10 rounded-full text-primary mb-8">
+          <div className="inline-flex items-center justify-center p-6 bg-primary/10 rounded-full text-primary mb-8">
             <Gift className="h-10 w-10" />
           </div>
-          <h2 className="text-4xl font-headline font-bold mb-6">Didn't find what you were looking for?</h2>
-          <p className="text-lg text-muted-foreground mb-12">
-            Our concierge team can create bespoke packages tailored to your specific needs, whether it's for a corporate retreat, a group event, or a personalized milestone celebration.
+          <h2 className="text-4xl md:text-5xl font-headline font-bold mb-6">Bespoke Holiday Planning</h2>
+          <p className="text-xl text-muted-foreground mb-12 leading-relaxed">
+            Our concierge team can create tailored packages for corporate retreats, private events, or milestone celebrations. Let us design your perfect escape.
           </p>
-          <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <Button size="lg" className="rounded-full px-12 h-14 bg-secondary hover:bg-secondary/90">
+          <div className="flex flex-col sm:flex-row justify-center gap-6">
+            <Button size="lg" className="rounded-full px-12 h-16 bg-secondary hover:bg-secondary/90 text-lg shadow-xl">
               Inquire Now
             </Button>
-            <Button size="lg" variant="outline" className="rounded-full px-12 h-14 border-primary text-primary">
+            <Button size="lg" variant="outline" className="rounded-full px-12 h-16 border-primary text-primary hover:bg-primary/5 text-lg">
               View All Terms
             </Button>
           </div>
-          <p className="mt-12 text-sm text-muted-foreground italic">
+          <p className="mt-16 text-sm text-muted-foreground italic">
             * All offers are subject to availability and seasonal blackout dates. Prices exclude taxes and service charges unless specified.
           </p>
         </div>
