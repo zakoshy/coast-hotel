@@ -1,11 +1,20 @@
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, CalendarCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import BookingForm from '@/components/booking/BookingForm';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -30,9 +39,7 @@ const Navbar = () => {
     { name: 'Offers', href: '/offers' },
   ];
 
-  // Determine if the navbar should have a solid background
   const isSolid = scrolled || !isHomePage;
-  // Determine the text color for the links
   const textColor = isSolid ? "text-foreground/80" : "text-white/90";
   const brandColor = isSolid ? "text-primary" : "text-white";
 
@@ -56,7 +63,7 @@ const Navbar = () => {
           </span>
         </Link>
 
-        {/* Desktop Menu - Visible on md screens and up (768px+) */}
+        {/* Desktop Menu */}
         <div className="hidden md:flex items-center space-x-8">
           {navLinks.map((link) => (
             <Link
@@ -64,18 +71,32 @@ const Navbar = () => {
               href={link.href}
               className={cn(
                 "text-sm font-bold tracking-wide hover:text-secondary transition-colors",
-                textColor
+                textColor,
+                pathname === link.href && "text-secondary"
               )}
             >
               {link.name}
             </Link>
           ))}
-          <Button asChild className="bg-primary hover:bg-primary/90 text-white rounded-full px-8 shadow-lg">
-            <Link href="/rooms#booking">Book Now</Link>
-          </Button>
+          
+          <Dialog>
+            <DialogTrigger asChild>
+              <Button className="bg-primary hover:bg-primary/90 text-white rounded-full px-8 shadow-lg font-bold gap-2">
+                <CalendarCheck className="h-4 w-4" />
+                Book Now
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[600px] rounded-[2rem] p-10 border-none shadow-2xl">
+              <DialogHeader className="mb-6">
+                <DialogTitle className="text-3xl font-headline font-bold text-primary text-center">Reserve Your Sanctuary</DialogTitle>
+                <p className="text-center text-muted-foreground">Select your preferred dates and guest count below.</p>
+              </DialogHeader>
+              <BookingForm layout="vertical" />
+            </DialogContent>
+          </Dialog>
         </div>
 
-        {/* Mobile Menu Toggle - Only visible on screens below md (768px) */}
+        {/* Mobile Menu Toggle */}
         <button
           className="md:hidden"
           onClick={() => setIsOpen(!isOpen)}
@@ -102,15 +123,28 @@ const Navbar = () => {
               key={link.name}
               href={link.href}
               onClick={() => setIsOpen(false)}
-              className="text-3xl font-headline font-bold text-foreground hover:text-primary transition-colors border-b border-muted pb-4"
+              className={cn(
+                "text-3xl font-headline font-bold hover:text-primary transition-colors border-b border-muted pb-4",
+                pathname === link.href ? "text-primary" : "text-foreground"
+              )}
             >
               {link.name}
             </Link>
           ))}
           <div className="pt-4">
-            <Button asChild className="w-full text-lg py-8 rounded-2xl" size="lg">
-              <Link href="/rooms#booking" onClick={() => setIsOpen(false)}>Reserve Your Oasis</Link>
-            </Button>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button className="w-full text-lg py-8 rounded-2xl font-bold" size="lg">
+                  Reserve Your Oasis
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="w-[95%] rounded-3xl p-6 border-none">
+                <DialogHeader className="mb-4">
+                  <DialogTitle className="text-2xl font-headline font-bold text-primary">Quick Booking</DialogTitle>
+                </DialogHeader>
+                <BookingForm layout="vertical" />
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
       </div>

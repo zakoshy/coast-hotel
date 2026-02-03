@@ -53,6 +53,18 @@
       "description": "Sunrise yoga session on a wooden deck by the beach",
       "imageUrl": "https://images.unsplash.com/photo-1506126613408-eca07ce68773?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw0fHxiZWFjaCUyMHlvZ2F8ZW58MHx8fHwxNzcwMDcwODkxfDA&ixlib=rb-4.1.0&q=80&w=1080",
       "imageHint": "beach yoga"
+    },
+    {
+      "id": "experience-fishing",
+      "description": "Deep sea fishing adventure in the Indian Ocean",
+      "imageUrl": "https://images.unsplash.com/photo-1534067783941-51c9c23ecefd?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw2fHxkZWVwJTIwc2VhJTIwZmlzaGluZ3xlbnwwfHx8fDE3NzAwNzA4OTF8MA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "deep sea fishing"
+    },
+    {
+      "id": "experience-spa",
+      "description": "Luxury spa treatment with coastal natural products",
+      "imageUrl": "https://images.unsplash.com/photo-1544161515-4ab6ce6db874?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwzfHxsdXh1cnklMjBzcGF8ZW58MHx8fHwxNzcwMDcwODkxfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "luxury spa"
     }
   ]
 }
