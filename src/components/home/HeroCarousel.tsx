@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useState, useCallback } from 'react';
@@ -15,11 +16,12 @@ const HeroCarousel = () => {
   const [api, setApi] = useState<CarouselApi>();
   const [current, setCurrent] = useState(0);
 
+  // We ensure the leading image is the most cinematic one
   const heroImages = [
     PlaceHolderImages.find(img => img.id === 'hero-beach'),
     PlaceHolderImages.find(img => img.id === 'infinity-pool'),
-    PlaceHolderImages.find(img => img.id === 'luxury-suite'),
     PlaceHolderImages.find(img => img.id === 'hotel-exterior'),
+    PlaceHolderImages.find(img => img.id === 'luxury-suite'),
   ].filter(Boolean);
 
   const onSelect = useCallback(() => {
@@ -32,10 +34,10 @@ const HeroCarousel = () => {
 
     api.on("select", onSelect);
     
-    // Auto-play logic
+    // Auto-play logic with a smooth duration
     const intervalId = setInterval(() => {
       api.scrollNext();
-    }, 5000);
+    }, 6000);
 
     return () => {
       api.off("select", onSelect);
@@ -49,7 +51,7 @@ const HeroCarousel = () => {
         setApi={setApi}
         opts={{
           loop: true,
-          duration: 50,
+          duration: 40,
         }}
         className="w-full h-full"
       >
@@ -66,22 +68,22 @@ const HeroCarousel = () => {
                   data-ai-hint={image.imageHint}
                 />
               )}
-              {/* Overlay for text readability */}
-              <div className="absolute inset-0 bg-black/30" />
+              {/* Sophisticated gradient overlay for text readability */}
+              <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/20" />
             </CarouselItem>
           ))}
         </CarouselContent>
       </Carousel>
 
-      {/* Slide Indicators */}
+      {/* Modern Slide Indicators */}
       <div className="absolute bottom-12 left-1/2 -translate-x-1/2 z-30 flex gap-3">
         {heroImages.map((_, index) => (
           <button
             key={index}
             onClick={() => api?.scrollTo(index)}
             className={cn(
-              "h-1.5 transition-all duration-300 rounded-full",
-              current === index ? "w-8 bg-secondary" : "w-2 bg-white/50"
+              "h-2 transition-all duration-500 rounded-full",
+              current === index ? "w-10 bg-secondary" : "w-3 bg-white/40 hover:bg-white/60"
             )}
             aria-label={`Go to slide ${index + 1}`}
           />

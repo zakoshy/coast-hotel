@@ -2,9 +2,9 @@
   "placeholderImages": [
     {
       "id": "hero-beach",
-      "description": "Aerial view of a pristine beach in Diani, Kenya",
-      "imageUrl": "https://images.unsplash.com/photo-1683277681900-bec76bbb96b2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHw4fHxLZW55YW4lMjBiZWFjaHxlbnwwfHx8fDE3NzAwNzA4OTB8MA&ixlib=rb-4.1.0&q=80&w=1080",
-      "imageHint": "Kenyan beach"
+      "description": "Cinematic view of Coastal Sands Retreat at sunset",
+      "imageUrl": "https://images.unsplash.com/photo-1540541338287-41700207dee6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxNHx8bHV4dXJ5JTIwYmVhY2glMjByZXNvcnR8ZW58MHx8fHwxNzcwMDcwODkwfDA&ixlib=rb-4.1.0&q=80&w=1080",
+      "imageHint": "luxury beach resort"
     },
     {
       "id": "luxury-suite",
