@@ -62,7 +62,7 @@ npm or yarn
 Gemini API access
 
 Installation
-git clone https://github.com/your-username/coastal-hotel-website.git
+git clone https://github.com/zakoshy/coast-hotel.git
 cd coastal-hotel-website
 npm install
 
