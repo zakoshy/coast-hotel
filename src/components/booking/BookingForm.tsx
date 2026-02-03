@@ -13,7 +13,10 @@ import {
   Mail,
   User,
   Ticket,
-  ArrowLeft
+  ArrowLeft,
+  Smartphone,
+  Globe,
+  ShieldCheck
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -25,15 +28,18 @@ import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface BookingFormProps {
   layout?: 'horizontal' | 'vertical';
 }
 
 type BookingStep = 'selection' | 'checking' | 'payment' | 'success';
+type PaymentMethod = 'card' | 'mpesa' | 'paypal';
 
 const BookingForm = ({ layout = 'vertical' }: BookingFormProps) => {
   const [step, setStep] = useState<BookingStep>('selection');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('card');
   const [progress, setProgress] = useState(0);
   const [date, setDate] = useState<{ from: Date | undefined; to: Date | undefined }>({
     from: undefined,
@@ -69,6 +75,7 @@ const BookingForm = ({ layout = 'vertical' }: BookingFormProps) => {
   const resetBooking = () => {
     setStep('selection');
     setProgress(0);
+    setPaymentMethod('card');
   };
 
   return (
@@ -187,9 +194,11 @@ const BookingForm = ({ layout = 'vertical' }: BookingFormProps) => {
             <Loader2 className="h-12 w-12 text-secondary animate-spin" />
             <div className="text-center">
               <h3 className="text-2xl font-headline font-bold text-primary mb-2">
-                {progress < 80 ? "Verifying Availability..." : "Processing Secure Payment..."}
+                {progress < 80 ? "Verifying Availability..." : "Finalizing Secure Transaction..."}
               </h3>
-              <p className="text-muted-foreground">Please do not refresh your browser.</p>
+              <p className="text-muted-foreground">
+                {paymentMethod === 'mpesa' && progress >= 80 ? "Check your phone for the M-Pesa STK Prompt..." : "Please do not refresh your browser."}
+              </p>
             </div>
           </motion.div>
         )}
@@ -201,54 +210,121 @@ const BookingForm = ({ layout = 'vertical' }: BookingFormProps) => {
             animate={{ opacity: 1, scale: 1 }}
             className="space-y-8"
           >
-            <div className="flex items-center gap-4 mb-6">
-              <Button variant="ghost" size="icon" onClick={() => setStep('selection')} className="rounded-full">
-                <ArrowLeft className="h-5 w-5" />
-              </Button>
-              <h3 className="text-2xl font-headline font-bold text-primary">Guest & Payment Details</h3>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-4">
+                <Button variant="ghost" size="icon" onClick={() => setStep('selection')} className="rounded-full">
+                  <ArrowLeft className="h-5 w-5" />
+                </Button>
+                <h3 className="text-2xl font-headline font-bold text-primary">Secure Reservation</h3>
+              </div>
+              <div className="hidden md:flex items-center gap-2 text-[10px] text-primary/60 font-bold uppercase tracking-widest">
+                <ShieldCheck className="h-4 w-4" />
+                <span>PCI-DSS Certified</span>
+              </div>
             </div>
 
             <form onSubmit={handlePaymentSubmit} className="grid md:grid-cols-2 gap-8">
               <div className="space-y-6">
-                <div className="space-y-2">
-                  <Label>Full Name</Label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-3 h-4 w-4 text-primary/40" />
-                    <Input placeholder="John Doe" className="pl-10 h-12 rounded-xl" required />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Email Address</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-primary/40" />
-                    <Input type="email" placeholder="john@example.com" className="pl-10 h-12 rounded-xl" required />
+                <div className="space-y-4">
+                  <Label className="text-xs uppercase tracking-[0.2em] font-bold text-muted-foreground">Guest Information</Label>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Full Name</Label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-3 h-4 w-4 text-primary/40" />
+                        <Input placeholder="John Doe" className="pl-10 h-12 rounded-xl" required />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Email Address</Label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-3 h-4 w-4 text-primary/40" />
+                        <Input type="email" placeholder="john@example.com" className="pl-10 h-12 rounded-xl" required />
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-muted/30 p-6 rounded-2xl border border-primary/5 space-y-6">
-                <div className="space-y-2">
-                  <Label>Credit Card Number</Label>
-                  <div className="relative">
-                    <CardIcon className="absolute left-3 top-3 h-4 w-4 text-primary/40" />
-                    <Input placeholder="0000 0000 0000 0000" className="pl-10 h-12 rounded-xl" required />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Expiry</Label>
-                    <Input placeholder="MM/YY" className="h-12 rounded-xl" required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>CVC</Label>
-                    <Input placeholder="123" className="h-12 rounded-xl" required />
-                  </div>
-                </div>
-                <Button className="w-full h-14 bg-secondary text-white font-bold rounded-xl text-lg mt-4">
-                  Confirm Payment & Book
+              <div className="bg-muted/30 p-6 rounded-[2rem] border border-primary/5 space-y-6">
+                <Label className="text-xs uppercase tracking-[0.2em] font-bold text-muted-foreground block mb-2">Payment Method</Label>
+                
+                <Tabs defaultValue="card" onValueChange={(val) => setPaymentMethod(val as PaymentMethod)}>
+                  <TabsList className="grid grid-cols-3 h-12 mb-6 rounded-xl bg-primary/5">
+                    <TabsTrigger value="card" className="rounded-lg data-[state=active]:bg-primary data-[state=active]:text-white">
+                      <CardIcon className="h-4 w-4 mr-2" />
+                      Card
+                    </TabsTrigger>
+                    <TabsTrigger value="mpesa" className="rounded-lg data-[state=active]:bg-green-600 data-[state=active]:text-white">
+                      <Smartphone className="h-4 w-4 mr-2" />
+                      M-Pesa
+                    </TabsTrigger>
+                    <TabsTrigger value="paypal" className="rounded-lg data-[state=active]:bg-blue-600 data-[state=active]:text-white">
+                      <Globe className="h-4 w-4 mr-2" />
+                      PayPal
+                    </TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="card" className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Credit Card Number</Label>
+                      <div className="relative">
+                        <CardIcon className="absolute left-3 top-3 h-4 w-4 text-primary/40" />
+                        <Input placeholder="0000 0000 0000 0000" className="pl-10 h-12 rounded-xl" required={paymentMethod === 'card'} />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Expiry</Label>
+                        <Input placeholder="MM/YY" className="h-12 rounded-xl" required={paymentMethod === 'card'} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>CVC</Label>
+                        <Input placeholder="123" className="h-12 rounded-xl" required={paymentMethod === 'card'} />
+                      </div>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="mpesa" className="space-y-4">
+                    <div className="p-4 bg-green-50 rounded-xl border border-green-100 mb-4">
+                      <p className="text-xs text-green-800 leading-relaxed">
+                        Enter your M-Pesa registered number. You will receive an <strong>STK Push</strong> notification on your phone to enter your PIN.
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>M-Pesa Phone Number</Label>
+                      <div className="relative">
+                        <Smartphone className="absolute left-3 top-3 h-4 w-4 text-green-600" />
+                        <Input placeholder="+254 7XX XXX XXX" className="pl-10 h-12 rounded-xl border-green-200" required={paymentMethod === 'mpesa'} />
+                      </div>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="paypal" className="space-y-4 text-center py-6">
+                    <div className="flex flex-col items-center gap-4">
+                      <div className="p-4 bg-blue-50 rounded-full">
+                        <Globe className="h-8 w-8 text-blue-600" />
+                      </div>
+                      <p className="text-sm text-muted-foreground max-w-[200px]">
+                        You will be redirected to the secure PayPal gateway to complete your transaction.
+                      </p>
+                    </div>
+                  </TabsContent>
+                </Tabs>
+
+                <Button className={cn(
+                  "w-full h-14 font-bold rounded-xl text-lg mt-4 shadow-lg transition-all",
+                  paymentMethod === 'mpesa' ? "bg-green-600 hover:bg-green-700 text-white" : 
+                  paymentMethod === 'paypal' ? "bg-blue-600 hover:bg-blue-700 text-white" :
+                  "bg-secondary hover:bg-secondary/90 text-white"
+                )}>
+                  {paymentMethod === 'card' ? 'Pay & Confirm Booking' : 
+                   paymentMethod === 'mpesa' ? 'Initiate M-Pesa Payment' : 
+                   'Proceed to PayPal'}
                 </Button>
-                <p className="text-[10px] text-center text-muted-foreground uppercase tracking-widest">
-                  Secure 256-bit encrypted connection
+                
+                <p className="text-[9px] text-center text-muted-foreground uppercase tracking-[0.2em]">
+                  Encrypted 256-bit Secure Gateway
                 </p>
               </div>
             </form>
@@ -283,8 +359,8 @@ const BookingForm = ({ layout = 'vertical' }: BookingFormProps) => {
                     <p className="font-bold">Valued Guest</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[10px] uppercase font-bold text-muted-foreground">Room</p>
-                    <p className="font-bold">Ocean Deluxe</p>
+                    <p className="text-[10px] uppercase font-bold text-muted-foreground">Method</p>
+                    <p className="font-bold uppercase text-xs">{paymentMethod}</p>
                   </div>
                 </div>
                 <div className="flex justify-between">
