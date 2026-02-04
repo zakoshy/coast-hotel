@@ -151,25 +151,35 @@ export default function AdminDashboard() {
   const adminProfileRef = useMemoFirebase(() => user ? doc(db, 'admin_users', user.uid) : null, [db, user]);
   const { data: adminProfile, isLoading: isAdminProfileLoading } = useDoc(adminProfileRef);
 
-  const hotelId = adminProfile?.hotelId;
+  // Core ID normalization to ensure website and admin are always in sync
+  const hotelId = adminProfile?.hotelId || PUBLIC_HOTEL_ID;
   
   const hotelRef = useMemoFirebase(() => {
-    if (hotelId) return doc(db, 'hotels', hotelId);
-    return doc(db, 'hotels', PUBLIC_HOTEL_ID);
+    return doc(db, 'hotels', hotelId);
   }, [db, hotelId]);
   
   const { data: hotelData } = useDoc(hotelRef);
 
-  const bookingsQuery = useMemoFirebase(() => hotelId ? collection(db, 'hotels', hotelId, 'bookings') : null, [db, hotelId]);
+  const bookingsQuery = useMemoFirebase(() => {
+    if (!adminProfile) return null; // Only fetch if authenticated admin
+    return collection(db, 'hotels', hotelId, 'bookings');
+  }, [db, hotelId, adminProfile]);
   const { data: bookings } = useCollection(bookingsQuery);
 
-  const roomsQuery = useMemoFirebase(() => hotelId ? collection(db, 'hotels', hotelId, 'rooms') : null, [db, hotelId]);
+  const roomsQuery = useMemoFirebase(() => {
+    return collection(db, 'hotels', hotelId, 'rooms');
+  }, [db, hotelId]);
   const { data: rooms } = useCollection(roomsQuery);
 
-  const revenueQuery = useMemoFirebase(() => hotelId ? collection(db, 'hotels', hotelId, 'revenue') : null, [db, hotelId]);
+  const revenueQuery = useMemoFirebase(() => {
+    if (!adminProfile) return null;
+    return collection(db, 'hotels', hotelId, 'revenue');
+  }, [db, hotelId, adminProfile]);
   const { data: revenueData } = useCollection(revenueQuery);
 
-  const pagesCollectionRef = useMemoFirebase(() => hotelId ? collection(db, 'hotels', hotelId, 'pages') : null, [db, hotelId]);
+  const pagesCollectionRef = useMemoFirebase(() => {
+    return collection(db, 'hotels', hotelId, 'pages');
+  }, [db, hotelId]);
   const { data: pageContents } = useCollection(pagesCollectionRef);
 
   const filteredBookings = useMemo(() => {
@@ -246,7 +256,7 @@ export default function AdminDashboard() {
         description: 'A breathtaking suite with floor-to-ceiling windows overlooking the Indian Ocean. Features Swahili-inspired decor and a private terrace.',
         amenities: 'Private Balcony, King Bed, Mini Bar, Rainfall Shower',
         status: 'active',
-        imageUrls: ['https://images.unsplash.com/photo-1759223198981-661cadbbff36?q=80&w=1080']
+        imageUrls: ['https://images.unsplash.com/photo-1540541338287-41700207dee6?q=80&w=1080']
       },
       {
         id: 'garden-villa-1',

@@ -1,4 +1,3 @@
-
 "use client";
 
 import React from 'react';
@@ -17,15 +16,14 @@ const PUBLIC_HOTEL_ID = 'coastal-sands-retreat';
 export default function RoomsPage() {
   const db = useFirestore();
   
-  // Real-time synchronization with the collection managed in Admin Dashboard
-  // We fetch the entire collection to ensure maximum reliability and real-time updates
+  // Directly subscribe to the collection for maximum real-time reliability
   const roomsQuery = useMemoFirebase(() => {
     return collection(db, 'hotels', PUBLIC_HOTEL_ID, 'rooms');
   }, [db]);
   
   const { data: rooms, isLoading } = useCollection(roomsQuery);
 
-  // Filter out rooms marked as "out_of_order" by the admin in the frontend
+  // Filter maintenance rooms locally to avoid strict firestore indexing issues for new users
   const availableRooms = React.useMemo(() => {
     if (!rooms) return [];
     return rooms.filter(room => room.status !== 'out_of_order');
@@ -48,17 +46,7 @@ export default function RoomsPage() {
               <Loader2 className="h-12 w-12 text-primary animate-spin" />
               <p className="text-muted-foreground italic text-xl animate-pulse">Fetching our finest collection...</p>
             </div>
-          ) : availableRooms.length === 0 ? (
-            <div className="text-center py-20 space-y-8 bg-white rounded-[3rem] shadow-xl border border-primary/5 p-12">
-              <div className="h-20 w-20 bg-primary/10 rounded-3xl flex items-center justify-center mx-auto">
-                <Waves className="h-10 w-10 text-primary" />
-              </div>
-              <div className="max-w-md mx-auto">
-                <p className="text-muted-foreground italic text-xl mb-6">No rooms currently available for online booking. Please check back soon or contact our concierge.</p>
-                <Button size="lg" className="rounded-2xl h-16 px-10 bg-primary font-bold shadow-xl shadow-primary/20">Contact Concierge Directly</Button>
-              </div>
-            </div>
-          ) : (
+          ) : (availableRooms && availableRooms.length > 0) ? (
             availableRooms.map((room, idx) => (
               <div key={room.id} className={cn("flex flex-col gap-16 items-center", idx % 2 === 1 ? "lg:flex-row-reverse" : "lg:flex-row")}>
                 <div className="w-full lg:w-3/5 relative aspect-[16/10] rounded-[3rem] overflow-hidden shadow-2xl group border-4 border-white">
@@ -67,6 +55,7 @@ export default function RoomsPage() {
                     alt={room.roomType}
                     fill
                     className="object-cover transition-transform duration-700 group-hover:scale-110"
+                    priority={idx === 0}
                   />
                   <div className="absolute top-8 left-8">
                     <Badge className="bg-white/95 text-primary font-bold text-2xl px-8 py-3 rounded-2xl shadow-xl backdrop-blur-md border-none">
@@ -97,6 +86,16 @@ export default function RoomsPage() {
                 </div>
               </div>
             ))
+          ) : (
+            <div className="text-center py-20 space-y-8 bg-white rounded-[3rem] shadow-xl border border-primary/5 p-12">
+              <div className="h-20 w-20 bg-primary/10 rounded-3xl flex items-center justify-center mx-auto">
+                <Waves className="h-10 w-10 text-primary" />
+              </div>
+              <div className="max-w-md mx-auto">
+                <p className="text-muted-foreground italic text-xl mb-6">No rooms currently available for online booking. Please check back soon or contact our concierge.</p>
+                <Button size="lg" className="rounded-2xl h-16 px-10 bg-primary font-bold shadow-xl shadow-primary/20">Contact Concierge Directly</Button>
+              </div>
+            </div>
           )}
         </div>
       </section>
