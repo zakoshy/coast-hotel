@@ -34,6 +34,10 @@ import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast';
+import { useFirestore, addDocumentNonBlocking } from '@/firebase';
+import { collection } from 'firebase/firestore';
+
+const PUBLIC_HOTEL_ID = 'coastal-sands-retreat';
 
 interface BookingFormProps {
   layout?: 'horizontal' | 'vertical';
@@ -44,12 +48,16 @@ type PaymentMethod = 'card' | 'mpesa' | 'paypal';
 
 const BookingForm = ({ layout = 'vertical' }: BookingFormProps) => {
   const { toast } = useToast();
+  const db = useFirestore();
   const [step, setStep] = useState<BookingStep>('selection');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('card');
   const [progress, setProgress] = useState(0);
   
   const [arrivalDate, setArrivalDate] = useState<Date | undefined>(undefined);
   const [departureDate, setDepartureDate] = useState<Date | undefined>(undefined);
+  const [guestName, setGuestName] = useState('');
+  const [guestEmail, setGuestEmail] = useState('');
+  const [guestsCount, setGuestsCount] = useState('2');
 
   const [arrivalOpen, setArrivalOpen] = useState(false);
   const [departureOpen, setDepartureOpen] = useState(false);
@@ -85,11 +93,44 @@ const BookingForm = ({ layout = 'vertical' }: BookingFormProps) => {
     }, 2000);
   };
 
-  const handlePaymentSubmit = (e: React.FormEvent) => {
+  const handlePaymentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setStep('checking');
     setProgress(85);
     
+    // Save to Firestore
+    try {
+      const bookingsCol = collection(db, 'hotels', PUBLIC_HOTEL_ID, 'bookings');
+      const bookingData = {
+        guestName,
+        guestEmail,
+        checkInDate: arrivalDate?.toISOString(),
+        checkOutDate: departureDate?.toISOString(),
+        numberOfGuests: Number(guestsCount),
+        totalAmount: 250, // Demo value
+        status: 'pending',
+        paymentStatus: 'paid',
+        paymentMethod,
+        roomType: 'Luxury Ocean Suite',
+        hotelId: PUBLIC_HOTEL_ID,
+        bookingDate: new Date().toISOString()
+      };
+      
+      addDocumentNonBlocking(bookingsCol, bookingData);
+
+      // Track as Revenue in a real app, here we just simulate the success
+      const revenueCol = collection(db, 'hotels', PUBLIC_HOTEL_ID, 'revenue');
+      addDocumentNonBlocking(revenueCol, {
+        hotelId: PUBLIC_HOTEL_ID,
+        date: new Date().toISOString(),
+        amount: 250,
+        source: 'Website'
+      });
+
+    } catch (err) {
+      console.error("Booking save failed:", err);
+    }
+
     // Simulate payment processing
     setTimeout(() => {
       setStep('success');
@@ -103,10 +144,12 @@ const BookingForm = ({ layout = 'vertical' }: BookingFormProps) => {
     setPaymentMethod('card');
     setArrivalDate(undefined);
     setDepartureDate(undefined);
+    setGuestName('');
+    setGuestEmail('');
   };
 
   return (
-    <div className="w-full max-w-5xl mx-auto">
+    <div className="w-full max-w-5xl mx-auto text-foreground">
       {step !== 'selection' && step !== 'success' && (
         <div className="mb-10 space-y-4">
           <div className="flex justify-between text-[11px] font-bold uppercase tracking-[0.3em] text-primary/70 px-1">
@@ -214,7 +257,7 @@ const BookingForm = ({ layout = 'vertical' }: BookingFormProps) => {
                 <Users className="h-3.5 w-3.5 text-secondary" />
                 Guests
               </Label>
-              <Select defaultValue="2" required>
+              <Select value={guestsCount} onValueChange={setGuestsCount} required>
                 <SelectTrigger className="h-16 border-primary/15 bg-white hover:bg-primary/[0.02] rounded-2xl font-bold shadow-sm text-lg px-6">
                   <SelectValue placeholder="Guests" />
                 </SelectTrigger>
@@ -297,14 +340,27 @@ const BookingForm = ({ layout = 'vertical' }: BookingFormProps) => {
                       <Label className="text-sm font-bold text-primary/80 ml-1">Full Legal Name</Label>
                       <div className="relative">
                         <User className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-primary/30" />
-                        <Input placeholder="As per ID or Passport" className="pl-14 h-16 rounded-[1.25rem] border-primary/10 bg-white text-lg" required />
+                        <Input 
+                          placeholder="As per ID or Passport" 
+                          className="pl-14 h-16 rounded-[1.25rem] border-primary/10 bg-white text-lg" 
+                          value={guestName}
+                          onChange={e => setGuestName(e.target.value)}
+                          required 
+                        />
                       </div>
                     </div>
                     <div className="space-y-2">
                       <Label className="text-sm font-bold text-primary/80 ml-1">Email Address</Label>
                       <div className="relative">
                         <Mail className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-primary/30" />
-                        <Input type="email" placeholder="For booking confirmation" className="pl-14 h-16 rounded-[1.25rem] border-primary/10 bg-white text-lg" required />
+                        <Input 
+                          type="email" 
+                          placeholder="For booking confirmation" 
+                          className="pl-14 h-16 rounded-[1.25rem] border-primary/10 bg-white text-lg" 
+                          value={guestEmail}
+                          onChange={e => setGuestEmail(e.target.value)}
+                          required 
+                        />
                       </div>
                     </div>
                   </div>
@@ -452,7 +508,7 @@ const BookingForm = ({ layout = 'vertical' }: BookingFormProps) => {
                 <div className="flex justify-between border-b border-primary/10 pb-10">
                   <div>
                     <p className="text-[11px] uppercase font-bold text-muted-foreground mb-2">Honored Guest</p>
-                    <p className="font-bold text-2xl text-primary font-headline">Valued Traveler</p>
+                    <p className="font-bold text-2xl text-primary font-headline">{guestName || "Valued Traveler"}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-[11px] uppercase font-bold text-muted-foreground mb-2 tracking-[0.2em]">Settlement</p>

@@ -2,8 +2,8 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase, updateDocumentNonBlocking, setDocumentNonBlocking } from '@/firebase';
-import { collection, doc } from 'firebase/firestore';
+import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase, updateDocumentNonBlocking, setDocumentNonBlocking, addDocumentNonBlocking } from '@/firebase';
+import { collection, doc, query, where } from 'firebase/firestore';
 import { 
   TrendingUp, 
   DollarSign, 
@@ -28,12 +28,14 @@ import {
   PieChart as PieChartIcon,
   Palmtree,
   Calendar as CalendarIcon,
-  Monitor
+  Monitor,
+  Save,
+  RefreshCw
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/avatar';
 import { 
   ChartContainer, 
   ChartTooltip, 
@@ -133,10 +135,14 @@ export default function AdminDashboard() {
   const adminProfileRef = useMemoFirebase(() => user ? doc(db, 'admin_users', user.uid) : null, [db, user]);
   const { data: adminProfile, isLoading: isAdminProfileLoading } = useDoc(adminProfileRef);
 
-  const hotelId = adminProfile?.hotelId;
+  const hotelId = adminProfile?.hotelId || PUBLIC_HOTEL_ID;
 
   const hotelRef = useMemoFirebase(() => hotelId ? doc(db, 'hotels', hotelId) : null, [db, hotelId]);
   const { data: hotelData } = useDoc(hotelRef);
+
+  // Dynamic Content Refs
+  const pagesCollectionRef = useMemoFirebase(() => hotelId ? collection(db, 'hotels', hotelId, 'pages') : null, [db, hotelId]);
+  const { data: pageContents } = useCollection(pagesCollectionRef);
 
   const bookingsQuery = useMemoFirebase(() => hotelId ? collection(db, 'hotels', hotelId, 'bookings') : null, [db, hotelId]);
   const { data: bookings } = useCollection(bookingsQuery);
@@ -183,6 +189,13 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleUpdatePageContent = async (pageId: string, content: any) => {
+    if (!db || !hotelId) return;
+    const pageRef = doc(db, 'hotels', hotelId, 'pages', pageId);
+    setDocumentNonBlocking(pageRef, { ...content, updatedAt: new Date().toISOString() }, { merge: true });
+    toast({ title: "Content Saved", description: `The ${pageId} page has been updated in real-time.` });
+  };
+
   const handleUpdateHotelInfo = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!db || !hotelRef) return;
@@ -196,7 +209,7 @@ export default function AdminDashboard() {
       policies: formData.get('policies'),
     };
     updateDocumentNonBlocking(hotelRef, updateData);
-    toast({ title: "Website Updated", description: "Changes are now live." });
+    toast({ title: "Hotel Profile Updated", description: "Live information synchronized." });
   };
 
   const handleUpdateRoomRate = async (e: React.FormEvent) => {
@@ -370,9 +383,9 @@ export default function AdminDashboard() {
                 
                 <Card className="border-none shadow-xl rounded-[2rem] p-8 bg-white overflow-hidden relative group transition-all hover:-translate-y-1">
                   <CalendarIcon className="h-10 w-10 text-blue-500 mb-6" />
-                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] mb-2">Pending Reservations</p>
-                  <h3 className="text-3xl font-headline font-bold text-primary">{bookings?.filter(b => b.status === 'pending').length || 0}</h3>
-                  <Badge className="mt-4 bg-amber-100 text-amber-700 hover:bg-amber-100 border-none">Requires Attention</Badge>
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em] mb-2">Active Reservations</p>
+                  <h3 className="text-3xl font-headline font-bold text-primary">{bookings?.length || 0}</h3>
+                  <Badge className="mt-4 bg-amber-100 text-amber-700 hover:bg-amber-100 border-none">Live Updates</Badge>
                 </Card>
 
                 <Card className="border-none shadow-xl rounded-[2rem] p-8 bg-white overflow-hidden relative group transition-all hover:-translate-y-1">
@@ -496,7 +509,7 @@ export default function AdminDashboard() {
                         </TableCell>
                         <TableCell>
                           <span className="font-bold text-primary">
-                            {isValidDate ? `${format(checkIn, 'MMM dd')} - ${format(checkOut, 'MMM dd')}` : 'Invalid Date'}
+                            {isValidDate ? `${format(checkIn, 'MMM dd')} - ${format(checkOut, 'MMM dd')}` : 'Live Reservation'}
                           </span>
                         </TableCell>
                         <TableCell>
@@ -505,14 +518,14 @@ export default function AdminDashboard() {
                             booking.status === 'confirmed' ? "bg-emerald-100 text-emerald-700" : 
                             booking.status === 'pending' ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"
                           )}>
-                            {booking.status}
+                            {booking.status || 'pending'}
                           </Badge>
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-col">
-                            <span className="font-bold text-primary">${booking.totalAmount}</span>
+                            <span className="font-bold text-primary">${booking.totalAmount || 0}</span>
                             <span className={cn("text-[10px] font-bold uppercase", booking.paymentStatus === 'paid' ? "text-emerald-500" : "text-amber-500")}>
-                              {booking.paymentStatus}
+                              {booking.paymentStatus || 'pending'}
                             </span>
                           </div>
                         </TableCell>
@@ -520,7 +533,7 @@ export default function AdminDashboard() {
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="rounded-xl"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
                             <DropdownMenuContent align="end" className="rounded-2xl border-none shadow-2xl p-2 w-48">
-                              <DropdownMenuItem className="rounded-xl font-bold gap-3" onClick={() => { setSelectedBooking(booking); setIsEditModalOpen(true); }}><Edit className="h-4 w-4" /> Edit Booking</DropdownMenuItem>
+                              <DropdownMenuItem className="rounded-xl font-bold gap-3" onClick={() => { setSelectedBooking(booking); setIsEditModalOpen(true); }}><Edit className="h-4 w-4" /> View Details</DropdownMenuItem>
                               <DropdownMenuItem className="rounded-xl font-bold gap-3 text-emerald-600 focus:text-emerald-600"><CheckCircle2 className="h-4 w-4" /> Confirm</DropdownMenuItem>
                               <DropdownMenuItem className="rounded-xl font-bold gap-3 text-red-500 focus:text-red-500"><XCircle className="h-4 w-4" /> Cancel</DropdownMenuItem>
                             </DropdownMenuContent>
@@ -589,13 +602,17 @@ export default function AdminDashboard() {
 
           {activeView === 'website' && (
             <Card className="border-none shadow-2xl rounded-[2.5rem] p-10 bg-white">
-              <Tabs defaultValue="content">
-                <TabsList className="mb-10 bg-slate-100/50 p-1.5 rounded-2xl">
-                  <TabsTrigger value="content" className="rounded-xl px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white">General Content</TabsTrigger>
-                  <TabsTrigger value="policies" className="rounded-xl px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white">Policies</TabsTrigger>
-                  <TabsTrigger value="media" className="rounded-xl px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white">Media Library</TabsTrigger>
+              <Tabs defaultValue="home">
+                <TabsList className="mb-10 bg-slate-100/50 p-1.5 rounded-2xl flex-wrap h-auto">
+                  <TabsTrigger value="hotel" className="rounded-xl px-6 font-bold data-[state=active]:bg-primary data-[state=active]:text-white">General Info</TabsTrigger>
+                  <TabsTrigger value="home" className="rounded-xl px-6 font-bold data-[state=active]:bg-primary data-[state=active]:text-white">Home Page</TabsTrigger>
+                  <TabsTrigger value="dining" className="rounded-xl px-6 font-bold data-[state=active]:bg-primary data-[state=active]:text-white">Dining</TabsTrigger>
+                  <TabsTrigger value="experiences" className="rounded-xl px-6 font-bold data-[state=active]:bg-primary data-[state=active]:text-white">Experiences</TabsTrigger>
+                  <TabsTrigger value="offers" className="rounded-xl px-6 font-bold data-[state=active]:bg-primary data-[state=active]:text-white">Offers</TabsTrigger>
+                  <TabsTrigger value="gallery" className="rounded-xl px-6 font-bold data-[state=active]:bg-primary data-[state=active]:text-white">Gallery</TabsTrigger>
                 </TabsList>
-                <TabsContent value="content">
+
+                <TabsContent value="hotel">
                   <form onSubmit={handleUpdateHotelInfo} className="space-y-8">
                     <div className="grid md:grid-cols-2 gap-8">
                       <div className="space-y-3"><Label className="font-bold text-primary">Hotel Name</Label><Input name="name" defaultValue={hotelData?.name} className="h-14 rounded-2xl bg-slate-50" /></div>
@@ -605,19 +622,45 @@ export default function AdminDashboard() {
                     <Button type="submit" className="h-14 px-12 rounded-2xl font-bold shadow-xl shadow-primary/20">Sync Changes</Button>
                   </form>
                 </TabsContent>
-                <TabsContent value="policies">
-                  <form onSubmit={handleUpdateHotelInfo} className="space-y-8">
-                    <div className="space-y-3"><Label className="font-bold text-primary">Guest Rules & Policies</Label><Textarea name="policies" defaultValue={hotelData?.policies} className="min-h-[300px] rounded-2xl bg-slate-50" /></div>
-                    <Button type="submit" className="h-14 px-12 rounded-2xl font-bold">Update Policies</Button>
-                  </form>
+
+                <TabsContent value="home">
+                  <PageEditor 
+                    pageId="home" 
+                    initialData={pageContents?.find(p => p.id === 'home')} 
+                    onSave={handleUpdatePageContent} 
+                  />
                 </TabsContent>
-                <TabsContent value="media" className="py-10">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                    <div className="aspect-square border-4 border-dashed rounded-[2.5rem] flex flex-col items-center justify-center text-muted-foreground hover:bg-slate-50 cursor-pointer transition-all">
-                      <Plus className="h-10 w-10 mb-2" />
-                      <span className="text-[10px] font-bold uppercase tracking-widest">Add Media</span>
-                    </div>
-                  </div>
+
+                <TabsContent value="dining">
+                  <PageEditor 
+                    pageId="dining" 
+                    initialData={pageContents?.find(p => p.id === 'dining')} 
+                    onSave={handleUpdatePageContent} 
+                  />
+                </TabsContent>
+
+                <TabsContent value="experiences">
+                  <PageEditor 
+                    pageId="experiences" 
+                    initialData={pageContents?.find(p => p.id === 'experiences')} 
+                    onSave={handleUpdatePageContent} 
+                  />
+                </TabsContent>
+
+                <TabsContent value="offers">
+                  <PageEditor 
+                    pageId="offers" 
+                    initialData={pageContents?.find(p => p.id === 'offers')} 
+                    onSave={handleUpdatePageContent} 
+                  />
+                </TabsContent>
+
+                <TabsContent value="gallery">
+                  <PageEditor 
+                    pageId="gallery" 
+                    initialData={pageContents?.find(p => p.id === 'gallery')} 
+                    onSave={handleUpdatePageContent} 
+                  />
                 </TabsContent>
               </Tabs>
             </Card>
@@ -726,5 +769,55 @@ export default function AdminDashboard() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+function PageEditor({ pageId, initialData, onSave }: { pageId: string, initialData: any, onSave: (id: string, content: any) => void }) {
+  const [data, setData] = useState(initialData || { heroTitle: '', heroSubtitle: '', bodyText: '' });
+
+  useEffect(() => {
+    if (initialData) setData(initialData);
+  }, [initialData]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave(pageId, data);
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-8 animate-in fade-in slide-in-from-bottom-2">
+      <div className="grid md:grid-cols-2 gap-8">
+        <div className="space-y-3">
+          <Label className="font-bold text-primary">Hero Headline</Label>
+          <Input 
+            value={data.heroTitle} 
+            onChange={e => setData({...data, heroTitle: e.target.value})}
+            placeholder="Main title on the page"
+            className="h-14 rounded-2xl bg-slate-50" 
+          />
+        </div>
+        <div className="space-y-3">
+          <Label className="font-bold text-primary">Hero Subtitle</Label>
+          <Input 
+            value={data.heroSubtitle} 
+            onChange={e => setData({...data, heroSubtitle: e.target.value})}
+            placeholder="Supporting text under title"
+            className="h-14 rounded-2xl bg-slate-50" 
+          />
+        </div>
+      </div>
+      <div className="space-y-3">
+        <Label className="font-bold text-primary">Main Content / Description</Label>
+        <Textarea 
+          value={data.bodyText} 
+          onChange={e => setData({...data, bodyText: e.target.value})}
+          className="min-h-[200px] rounded-2xl bg-slate-50" 
+          placeholder="Enter the primary descriptive text for this page..."
+        />
+      </div>
+      <Button type="submit" className="h-14 px-12 rounded-2xl font-bold bg-primary text-white gap-2">
+        <Save className="h-5 w-5" /> Update Live Page
+      </Button>
+    </form>
   );
 }

@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -20,8 +21,10 @@ export default function Home() {
   const hotelRef = useMemoFirebase(() => doc(db, 'hotels', PUBLIC_HOTEL_ID), [db]);
   const { data: hotelData } = useDoc(hotelRef);
 
+  const homePageRef = useMemoFirebase(() => doc(db, 'hotels', PUBLIC_HOTEL_ID, 'pages', 'home'), [db]);
+  const { data: homeContent } = useDoc(homePageRef);
+
   const poolImage = PlaceHolderImages.find(img => img.id === 'infinity-pool');
-  const suiteImage = PlaceHolderImages.find(img => img.id === 'luxury-suite');
 
   return (
     <div className="flex flex-col w-full">
@@ -31,10 +34,10 @@ export default function Home() {
         <div className="relative z-10 text-center text-white px-4 max-w-4xl">
           <p className="text-secondary font-bold tracking-[0.4em] uppercase mb-4 animate-fade-in-up">Escape to Paradise</p>
           <h1 className="text-5xl md:text-7xl font-headline font-bold mb-6 animate-fade-in-up [animation-delay:200ms] text-white">
-            {hotelData?.name?.split(' ').slice(0, -1).join(' ') || "Your Sanctuary"} <span className="text-secondary italic">{hotelData?.name?.split(' ').pop() || "By The Sea"}</span>
+            {homeContent?.heroTitle || (hotelData?.name?.split(' ').slice(0, -1).join(' ') || "Your Sanctuary")} <span className="text-secondary italic">{homeContent?.heroSubtitle || (hotelData?.name?.split(' ').pop() || "By The Sea")}</span>
           </h1>
           <p className="text-lg md:text-xl font-body mb-10 max-w-2xl mx-auto opacity-95 animate-fade-in-up [animation-delay:400ms]">
-            Experience the perfect blend of modern luxury and Swahili soul on the pristine shores of {hotelData?.location?.split(',')[0] || "Diani Beach"}.
+            {homeContent?.bodyText || `Experience the perfect blend of modern luxury and Swahili soul on the pristine shores of ${hotelData?.location?.split(',')[0] || "Diani Beach"}.`}
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up [animation-delay:600ms]">
             <Button size="lg" className="px-10 py-7 text-lg shadow-xl bg-primary text-primary-foreground hover:bg-primary/90" asChild>
