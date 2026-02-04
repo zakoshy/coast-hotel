@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -474,52 +475,60 @@ export default function AdminDashboard() {
                 <TableBody>
                   {filteredBookings.length === 0 ? (
                     <TableRow><TableCell colSpan={6} className="h-64 text-center text-muted-foreground font-medium">No reservations found.</TableCell></TableRow>
-                  ) : filteredBookings.map((booking) => (
-                    <TableRow key={booking.id} className="hover:bg-slate-50 transition-colors">
-                      <TableCell>
-                        <div className="flex flex-col">
-                          <span className="font-bold text-primary">{booking.guestName}</span>
-                          <span className="text-xs text-muted-foreground">{booking.guestEmail}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-col">
-                          <span className="font-bold text-primary">{booking.roomType}</span>
-                          {booking.specialRequests && <span className="text-[10px] text-amber-600 font-bold uppercase">Requests Provided</span>}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <span className="font-bold text-primary">{format(new Date(booking.checkInDate), 'MMM dd')} - {format(new Date(booking.checkOutDate), 'MMM dd')}</span>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={cn(
-                          "rounded-lg font-bold uppercase tracking-widest text-[10px] px-3 py-1 border-none",
-                          booking.status === 'confirmed' ? "bg-emerald-100 text-emerald-700" : 
-                          booking.status === 'pending' ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"
-                        )}>
-                          {booking.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-col">
-                          <span className="font-bold text-primary">${booking.totalAmount}</span>
-                          <span className={cn("text-[10px] font-bold uppercase", booking.paymentStatus === 'paid' ? "text-emerald-500" : "text-amber-500")}>
-                            {booking.paymentStatus}
+                  ) : filteredBookings.map((booking) => {
+                    const checkIn = booking.checkInDate ? new Date(booking.checkInDate) : null;
+                    const checkOut = booking.checkOutDate ? new Date(booking.checkOutDate) : null;
+                    const isValidDate = checkIn && !isNaN(checkIn.getTime()) && checkOut && !isNaN(checkOut.getTime());
+
+                    return (
+                      <TableRow key={booking.id} className="hover:bg-slate-50 transition-colors">
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span className="font-bold text-primary">{booking.guestName}</span>
+                            <span className="text-xs text-muted-foreground">{booking.guestEmail}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span className="font-bold text-primary">{booking.roomType}</span>
+                            {booking.specialRequests && <span className="text-[10px] text-amber-600 font-bold uppercase">Requests Provided</span>}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <span className="font-bold text-primary">
+                            {isValidDate ? `${format(checkIn, 'MMM dd')} - ${format(checkOut, 'MMM dd')}` : 'Invalid Date'}
                           </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="rounded-xl"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="rounded-2xl border-none shadow-2xl p-2 w-48">
-                            <DropdownMenuItem className="rounded-xl font-bold gap-3" onClick={() => { setSelectedBooking(booking); setIsEditModalOpen(true); }}><Edit className="h-4 w-4" /> Edit Booking</DropdownMenuItem>
-                            <DropdownMenuItem className="rounded-xl font-bold gap-3 text-emerald-600 focus:text-emerald-600"><CheckCircle2 className="h-4 w-4" /> Confirm</DropdownMenuItem>
-                            <DropdownMenuItem className="rounded-xl font-bold gap-3 text-red-500 focus:text-red-500"><XCircle className="h-4 w-4" /> Cancel</DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={cn(
+                            "rounded-lg font-bold uppercase tracking-widest text-[10px] px-3 py-1 border-none",
+                            booking.status === 'confirmed' ? "bg-emerald-100 text-emerald-700" : 
+                            booking.status === 'pending' ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"
+                          )}>
+                            {booking.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col">
+                            <span className="font-bold text-primary">${booking.totalAmount}</span>
+                            <span className={cn("text-[10px] font-bold uppercase", booking.paymentStatus === 'paid' ? "text-emerald-500" : "text-amber-500")}>
+                              {booking.paymentStatus}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="rounded-xl"><MoreVertical className="h-4 w-4" /></Button></DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="rounded-2xl border-none shadow-2xl p-2 w-48">
+                              <DropdownMenuItem className="rounded-xl font-bold gap-3" onClick={() => { setSelectedBooking(booking); setIsEditModalOpen(true); }}><Edit className="h-4 w-4" /> Edit Booking</DropdownMenuItem>
+                              <DropdownMenuItem className="rounded-xl font-bold gap-3 text-emerald-600 focus:text-emerald-600"><CheckCircle2 className="h-4 w-4" /> Confirm</DropdownMenuItem>
+                              <DropdownMenuItem className="rounded-xl font-bold gap-3 text-red-500 focus:text-red-500"><XCircle className="h-4 w-4" /> Cancel</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </Card>
@@ -537,7 +546,7 @@ export default function AdminDashboard() {
                 {rooms?.map((room) => (
                   <Card key={room.id} className="border-none shadow-xl rounded-[2.5rem] overflow-hidden bg-white group hover:-translate-y-1 transition-all">
                     <div className="h-48 relative">
-                      <img src={room.imageUrls?.[0] || `https://picsum.photos/seed/${room.id}/600/400`} className="h-full w-full object-cover" />
+                      <img src={room.imageUrls?.[0] || `https://picsum.photos/seed/${room.id}/600/400`} className="h-full w-full object-cover" alt={room.roomType} />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                       <div className="absolute bottom-6 left-6 text-white">
                         <p className="text-[10px] font-bold uppercase tracking-widest opacity-80 mb-1">Room #{room.roomNumber}</p>

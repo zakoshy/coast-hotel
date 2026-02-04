@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -118,6 +119,10 @@ const Navbar = () => {
 
       <div className={cn("fixed inset-0 top-[70px] bg-background z-40 transition-transform duration-500 md:hidden", isOpen ? "translate-x-0" : "translate-x-full")}>
         <div className="flex flex-col p-10 space-y-8 h-full bg-white">
+          <div className="flex flex-col gap-2 mb-8">
+            <p className="text-xs font-bold uppercase tracking-widest text-primary">Coastal Sands Retreat</p>
+            <h2 className="text-3xl font-headline font-bold">Menu</h2>
+          </div>
           {navLinks.map((link) => (
             <Link key={link.name} href={link.href} onClick={() => setIsOpen(false)} className={cn("text-3xl font-headline font-bold border-b border-muted pb-4", pathname === link.href ? "text-primary" : "text-foreground")}>
               {link.name}
@@ -125,7 +130,6 @@ const Navbar = () => {
           ))}
           <div className="pt-4 flex flex-col gap-6">
             <Button className="w-full text-lg py-8 rounded-2xl font-bold" size="lg">Reserve Your Oasis</Button>
-            <Link href="/admin/login" onClick={() => setIsOpen(false)} className="text-center text-sm font-bold uppercase tracking-widest text-primary/60 hover:text-primary">Staff Portal Access</Link>
           </div>
         </div>
       </div>

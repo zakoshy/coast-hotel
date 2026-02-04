@@ -1,3 +1,4 @@
+
 'use client';
 
 import React from 'react';
@@ -17,14 +18,12 @@ const Footer = () => {
   const hotelRef = useMemoFirebase(() => doc(db, 'hotels', PUBLIC_HOTEL_ID), [db]);
   const { data: hotelData } = useDoc(hotelRef);
 
-  // Hide footer on admin pages for a cleaner management interface
   if (isAdminPage) return null;
 
   return (
     <footer className="bg-[#0f172a] text-white pt-24 pb-12 px-6 border-t border-white/5">
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-16">
-          {/* Brand & Mission */}
           <div className="space-y-8">
             <Link href="/" className="flex flex-col group">
               <div className="flex items-center gap-3 mb-2">
@@ -38,7 +37,7 @@ const Footer = () => {
               </span>
             </Link>
             <p className="text-slate-400 text-sm leading-relaxed max-w-xs">
-              {hotelData?.description?.slice(0, 160)}...
+              Experience the perfect blend of modern luxury and Swahili soul on the pristine shores of Diani Beach.
             </p>
             <div className="flex gap-4">
               {[Instagram, Facebook, Twitter].map((Icon, i) => (
@@ -49,7 +48,6 @@ const Footer = () => {
             </div>
           </div>
 
-          {/* Quick Navigation */}
           <div>
             <h4 className="text-sm font-bold uppercase tracking-[0.3em] text-secondary mb-8">Navigation</h4>
             <ul className="space-y-4 text-slate-400 text-sm">
@@ -70,7 +68,6 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Contact Details */}
           <div>
             <h4 className="text-sm font-bold uppercase tracking-[0.3em] text-secondary mb-8">Get In Touch</h4>
             <ul className="space-y-6 text-slate-400 text-sm">
@@ -84,12 +81,11 @@ const Footer = () => {
               </li>
               <li className="flex items-center gap-4">
                 <Mail className="h-5 w-5 shrink-0 text-secondary" />
-                <span className="truncate">{hotelData?.email || "stay@coastalsandsretreat.com"}</span>
+                <span className="truncate">{hotelData?.email || "stay@coastalsands.com"}</span>
               </li>
             </ul>
           </div>
 
-          {/* Newsletter */}
           <div>
             <h4 className="text-sm font-bold uppercase tracking-[0.3em] text-secondary mb-8">The Collection</h4>
             <p className="text-slate-400 text-sm mb-6 leading-relaxed">
@@ -108,7 +104,6 @@ const Footer = () => {
           </div>
         </div>
 
-        {/* Bottom Bar */}
         <div className="mt-24 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6 text-[10px] font-bold uppercase tracking-widest text-slate-500">
           <p>© {new Date().getFullYear()} {hotelData?.name || "Coastal Sands Retreat"}. Crafted for Paradise.</p>
           <div className="flex items-center gap-8">
