@@ -27,7 +27,8 @@ import {
   Menu as MenuIcon,
   Tag,
   Hammer,
-  ArrowRight
+  ArrowRight,
+  UserPen
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -85,6 +86,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 const chartConfig = {
   revenue: {
@@ -99,12 +101,14 @@ export default function AdminDashboard() {
   const { user, isUserLoading } = useUser();
   const db = useFirestore();
   const router = useRouter();
+  const { toast } = useToast();
 
   const [activeView, setActiveView] = useState<ViewState>('overview');
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
   const [selectedRoom, setSelectedRoom] = useState<any>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isRoomModalOpen, setIsRoomModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   // Filters
@@ -176,6 +180,10 @@ export default function AdminDashboard() {
     if (!db || !hotelId) return;
     const bookingRef = doc(db, 'hotels', hotelId, 'bookings', bookingId);
     updateDocumentNonBlocking(bookingRef, { status: newStatus });
+    toast({
+      title: "Booking Updated",
+      description: `Reservation status changed to ${newStatus}.`,
+    });
   };
 
   const handleSaveBookingEdit = (e: React.FormEvent) => {
@@ -194,6 +202,7 @@ export default function AdminDashboard() {
     });
     
     setIsEditModalOpen(false);
+    toast({ title: "Update Successful", description: "Booking details have been saved." });
   };
 
   const handleSaveRoomUpdate = (e: React.FormEvent) => {
@@ -208,7 +217,6 @@ export default function AdminDashboard() {
       status: formData.get('status'),
     };
 
-    // Add seasonal rate if provided
     const seasonalPrice = formData.get('seasonalPrice');
     const seasonalStart = formData.get('seasonalStart');
     const seasonalEnd = formData.get('seasonalEnd');
@@ -223,6 +231,19 @@ export default function AdminDashboard() {
 
     updateDocumentNonBlocking(roomRef, updateData);
     setIsRoomModalOpen(false);
+    toast({ title: "Inventory Updated", description: "Rates and status successfully applied." });
+  };
+
+  const handleSaveProfileUpdate = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!db || !user || !adminProfileRef) return;
+
+    const formData = new FormData(e.currentTarget as HTMLFormElement);
+    const username = formData.get('username') as string;
+
+    updateDocumentNonBlocking(adminProfileRef, { username });
+    setIsProfileModalOpen(false);
+    toast({ title: "Profile Updated", description: "Your account details have been refreshed." });
   };
 
   if (isUserLoading || isAdminProfileLoading) {
@@ -325,7 +346,7 @@ export default function AdminDashboard() {
         
         <NavContent />
 
-        <div className="pt-8 border-t border-white/10">
+        <div className="pt-8 border-t border-white/10 mt-auto">
           <div className="flex items-center gap-4 mb-6 px-2">
             <Avatar className="h-12 w-12 border-2 border-secondary shadow-lg">
               <AvatarImage src={`https://picsum.photos/seed/${user.uid}/100/100`} />
@@ -340,10 +361,10 @@ export default function AdminDashboard() {
           </div>
           <Button 
             variant="outline" 
-            className="w-full border-white/10 bg-white/5 text-white hover:bg-white/10 rounded-xl h-12" 
+            className="w-full border-white/10 bg-white/5 text-white hover:bg-white/10 rounded-xl h-12 font-bold" 
             onClick={handleLogout}
           >
-            <LogOut className="mr-3 h-4 w-4" /> Sign Out
+            <LogOut className="mr-3 h-4 w-4 text-red-400" /> Sign Out
           </Button>
         </div>
       </div>
@@ -358,11 +379,20 @@ export default function AdminDashboard() {
                   <MenuIcon className="h-5 w-5 text-slate-600" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="bg-[#0f172a] border-none text-white p-8 w-72">
+              <SheetContent side="left" className="bg-[#0f172a] border-none text-white p-8 w-72 flex flex-col">
                 <SheetHeader className="mb-10 text-left">
                   <SheetTitle className="text-white font-headline text-2xl">COASTAL SANDS</SheetTitle>
                 </SheetHeader>
                 <NavContent />
+                <div className="mt-auto pt-8 border-t border-white/10">
+                  <Button 
+                    variant="outline" 
+                    className="w-full border-white/10 bg-white/5 text-white hover:bg-white/10 rounded-xl h-12 font-bold" 
+                    onClick={handleLogout}
+                  >
+                    <LogOut className="mr-3 h-4 w-4 text-red-400" /> Sign Out
+                  </Button>
+                </div>
               </SheetContent>
             </Sheet>
 
@@ -710,14 +740,48 @@ export default function AdminDashboard() {
                 </div>
                 
                 <div className="flex flex-col sm:flex-row gap-4 pt-6">
-                  <Button onClick={handleLogout} variant="outline" className="w-full h-14 rounded-xl font-bold border-red-100 text-red-600 hover:bg-red-50">
-                    <LogOut className="mr-2 h-5 w-5" /> Terminate Session
+                  <Button 
+                    onClick={() => setIsProfileModalOpen(true)}
+                    className="flex-1 h-14 rounded-xl font-bold bg-primary hover:bg-primary/90 text-white shadow-lg"
+                  >
+                    <UserPen className="mr-2 h-5 w-5" /> Edit Profile
+                  </Button>
+                  <Button 
+                    onClick={handleLogout} 
+                    variant="outline" 
+                    className="flex-1 h-14 rounded-xl font-bold border-red-100 text-red-600 hover:bg-red-50"
+                  >
+                    <LogOut className="mr-2 h-5 w-5" /> Sign Out
                   </Button>
                 </div>
               </CardContent>
             </Card>
           </div>
         )}
+
+        {/* Profile Edit Modal */}
+        <Dialog open={isProfileModalOpen} onOpenChange={setIsProfileModalOpen}>
+          <DialogContent className="sm:max-w-[450px] rounded-[2.5rem] p-10">
+            <DialogHeader>
+              <DialogTitle className="text-3xl font-headline font-bold text-primary">Edit Account</DialogTitle>
+              <DialogDescription>Update your public identity on the management platform.</DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleSaveProfileUpdate} className="space-y-6 mt-6">
+              <div className="space-y-2">
+                <Label className="font-bold text-xs uppercase tracking-widest text-slate-500">Public Username</Label>
+                <Input name="username" defaultValue={adminProfile?.username} className="rounded-xl h-12" required />
+              </div>
+              <div className="space-y-2">
+                <Label className="font-bold text-xs uppercase tracking-widest text-slate-500">Email (Read Only)</Label>
+                <Input defaultValue={user.email || ''} className="rounded-xl h-12 bg-muted/30" disabled />
+              </div>
+              <DialogFooter className="pt-6">
+                <Button type="button" variant="ghost" onClick={() => setIsProfileModalOpen(false)}>Cancel</Button>
+                <Button type="submit" className="rounded-xl bg-primary text-white font-bold px-8">Save Changes</Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
 
         {/* Room Manager Modal */}
         <Dialog open={isRoomModalOpen} onOpenChange={setIsRoomModalOpen}>
