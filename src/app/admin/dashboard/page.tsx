@@ -129,6 +129,7 @@ export default function AdminDashboard() {
   const [selectedRoom, setSelectedRoom] = useState<any>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isRoomModalOpen, setIsRoomModalOpen] = useState(false);
+  const [isCreateRoomModalOpen, setIsCreateRoomModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -143,10 +144,8 @@ export default function AdminDashboard() {
   const adminProfileRef = useMemoFirebase(() => user ? doc(db, 'admin_users', user.uid) : null, [db, user]);
   const { data: adminProfile, isLoading: isAdminProfileLoading } = useDoc(adminProfileRef);
 
-  // Derived hotelId - only set if profile exists to prevent premature permission-restricted queries
   const hotelId = adminProfile?.hotelId;
   
-  // Hotel data is public, but we only load the specific one for this admin if available
   const hotelRef = useMemoFirebase(() => {
     if (hotelId) return doc(db, 'hotels', hotelId);
     return doc(db, 'hotels', PUBLIC_HOTEL_ID);
@@ -154,7 +153,6 @@ export default function AdminDashboard() {
   
   const { data: hotelData } = useDoc(hotelRef);
 
-  // Sensitive sub-collections are ONLY queried if hotelId is derived from a valid adminProfile
   const bookingsQuery = useMemoFirebase(() => hotelId ? collection(db, 'hotels', hotelId, 'bookings') : null, [db, hotelId]);
   const { data: bookings } = useCollection(bookingsQuery);
 
@@ -201,6 +199,30 @@ export default function AdminDashboard() {
     } finally {
       setIsInitializing(false);
     }
+  };
+
+  const handleCreateRoom = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!db || !hotelId) return;
+    const formData = new FormData(e.currentTarget as HTMLFormElement);
+    const roomId = `room-${Date.now()}`;
+    const newRoom = {
+      id: roomId,
+      hotelId,
+      roomNumber: formData.get('roomNumber'),
+      roomType: formData.get('roomType'),
+      price: Number(formData.get('price')),
+      maxOccupancy: Number(formData.get('maxOccupancy')),
+      description: formData.get('description'),
+      amenities: formData.get('amenities'),
+      status: 'active',
+      imageUrls: [formData.get('imageUrl') || `https://picsum.photos/seed/${roomId}/800/600`]
+    };
+
+    const roomRef = doc(db, 'hotels', hotelId, 'rooms', roomId);
+    setDocumentNonBlocking(roomRef, newRoom, { merge: true });
+    setIsCreateRoomModalOpen(false);
+    toast({ title: "Room Created", description: "Your new room is now live on the website." });
   };
 
   const handleSeedRooms = async () => {
@@ -306,7 +328,6 @@ export default function AdminDashboard() {
 
   if (!user) return null;
 
-  // If user is logged in but profile hasn't been created/verified, show the verification screen
   if (!adminProfile) {
     return (
       <div className="min-h-screen bg-[#f8fafc] flex flex-col items-center justify-center p-6 text-center">
@@ -373,7 +394,6 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-[#f8fafc] flex">
-      {/* Desktop Sidebar */}
       <aside className="fixed left-0 top-0 bottom-0 w-72 bg-[#0f172a] text-white p-8 hidden lg:flex flex-col z-50">
         <div className="mb-12">
           <div className="flex items-center gap-3 mb-2">
@@ -622,7 +642,13 @@ export default function AdminDashboard() {
                   <h4 className="text-xl font-headline font-bold text-primary">Inventory & Rates</h4>
                   <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest mt-1">Manage standard and seasonal pricing</p>
                 </div>
-                <div className="flex gap-4 items-center">
+                <div className="flex flex-wrap gap-4 items-center">
+                  <Button 
+                    onClick={() => setIsCreateRoomModalOpen(true)}
+                    className="rounded-xl font-bold h-12 bg-primary text-white shadow-lg shadow-primary/20 gap-2 px-6"
+                  >
+                    <Plus className="h-4 w-4" /> Add New Room
+                  </Button>
                   {(!rooms || rooms.length === 0) && (
                     <Button 
                       variant="outline" 
@@ -882,6 +908,50 @@ export default function AdminDashboard() {
               </Select>
             </div>
             <Button type="submit" className="w-full h-14 rounded-xl font-bold text-lg shadow-xl shadow-primary/20">Synchronize Inventory</Button>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isCreateRoomModalOpen} onOpenChange={setIsCreateRoomModalOpen}>
+        <DialogContent className="rounded-[2.5rem] border-none shadow-2xl p-10 max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-headline font-bold text-primary">Add New Room</DialogTitle>
+            <DialogDescription>Manually add a new room to the hotel catalog.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleCreateRoom} className="space-y-6 mt-6 pb-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="font-bold text-primary">Room Number</Label>
+                <Input name="roomNumber" placeholder="e.g. 101" className="h-12 rounded-xl bg-slate-50" required />
+              </div>
+              <div className="space-y-2">
+                <Label className="font-bold text-primary">Max Occupancy</Label>
+                <Input name="maxOccupancy" type="number" placeholder="2" className="h-12 rounded-xl bg-slate-50" required />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label className="font-bold text-primary">Room Type / Category</Label>
+              <Input name="roomType" placeholder="e.g. Luxury Ocean Suite" className="h-12 rounded-xl bg-slate-50" required />
+            </div>
+            <div className="space-y-2">
+              <Label className="font-bold text-primary">Nightly Price ($)</Label>
+              <Input name="price" type="number" placeholder="250" className="h-12 rounded-xl bg-slate-50" required />
+            </div>
+            <div className="space-y-2">
+              <Label className="font-bold text-primary">Amenities (Comma separated)</Label>
+              <Input name="amenities" placeholder="King Bed, Ocean View, Wi-Fi" className="h-12 rounded-xl bg-slate-50" />
+            </div>
+            <div className="space-y-2">
+              <Label className="font-bold text-primary">Description</Label>
+              <Textarea name="description" placeholder="Describe the room features..." className="rounded-xl bg-slate-50 min-h-[100px]" required />
+            </div>
+            <div className="space-y-2">
+              <Label className="font-bold text-primary">Cover Image URL (Optional)</Label>
+              <Input name="imageUrl" placeholder="https://..." className="h-12 rounded-xl bg-slate-50" />
+            </div>
+            <Button type="submit" className="w-full h-14 rounded-xl font-bold text-lg shadow-xl shadow-primary/20 bg-primary text-white">
+              Launch Room to Website
+            </Button>
           </form>
         </DialogContent>
       </Dialog>
