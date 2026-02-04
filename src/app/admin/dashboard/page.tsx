@@ -28,7 +28,10 @@ import {
   Calendar as CalendarIcon,
   Monitor,
   Save,
-  RefreshCw
+  RefreshCw,
+  Info,
+  Settings2,
+  Wrench
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -83,6 +86,12 @@ import {
   SheetTitle, 
   SheetTrigger 
 } from '@/components/ui/sheet';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -133,15 +142,11 @@ export default function AdminDashboard() {
   const adminProfileRef = useMemoFirebase(() => user ? doc(db, 'admin_users', user.uid) : null, [db, user]);
   const { data: adminProfile, isLoading: isAdminProfileLoading } = useDoc(adminProfileRef);
 
-  // Derive hotelId strictly from the profile for operational data
   const hotelId = adminProfile?.hotelId;
-
-  // For general hotel metadata (publicly readable), fallback for UI display
   const displayHotelId = hotelId || PUBLIC_HOTEL_ID;
   const hotelRef = useMemoFirebase(() => doc(db, 'hotels', displayHotelId), [db, displayHotelId]);
   const { data: hotelData } = useDoc(hotelRef);
 
-  // Dynamic Content Refs - only if hotelId is confirmed from profile
   const pagesCollectionRef = useMemoFirebase(() => hotelId ? collection(db, 'hotels', hotelId, 'pages') : null, [db, hotelId]);
   const { data: pageContents } = useCollection(pagesCollectionRef);
 
@@ -334,7 +339,6 @@ export default function AdminDashboard() {
         </div>
       </aside>
 
-      {/* Main Content Area */}
       <main className="flex-1 lg:ml-72 min-h-screen">
         <header className="p-6 md:p-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border-b border-slate-200 bg-white sticky top-0 z-40">
           <div className="flex items-center gap-4">
@@ -550,10 +554,16 @@ export default function AdminDashboard() {
 
           {activeView === 'rooms' && (
             <div className="space-y-10">
-              <div className="flex justify-between items-center">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                 <div>
                   <h4 className="text-xl font-headline font-bold text-primary">Inventory & Rates</h4>
                   <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest mt-1">Manage standard and seasonal pricing</p>
+                </div>
+                <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10 flex gap-4 items-center">
+                  <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary"><Settings2 className="h-5 w-5" /></div>
+                  <div className="text-[10px] font-bold text-primary/80 leading-relaxed max-w-xs uppercase tracking-wider">
+                    Use this section to update base rates, set peak-season pricing, and mark rooms for maintenance.
+                  </div>
                 </div>
               </div>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -571,7 +581,7 @@ export default function AdminDashboard() {
                           "rounded-full px-4 py-1 font-bold border-none",
                           room.status === 'out_of_order' ? "bg-red-500 text-white" : "bg-emerald-500 text-white"
                         )}>
-                          {room.status === 'out_of_order' ? 'Maintenance' : 'Active'}
+                          {room.status === 'out_of_order' ? <span className="flex items-center gap-1.5"><Wrench className="h-3 w-3" /> Maintenance</span> : 'Available'}
                         </Badge>
                       </div>
                     </div>
@@ -583,12 +593,12 @@ export default function AdminDashboard() {
                         </div>
                         {room.seasonalRate && (
                           <div className="flex justify-between items-center p-3 bg-secondary/5 rounded-xl border border-secondary/10">
-                            <span className="text-[10px] font-bold text-secondary uppercase tracking-widest">Seasonal Special</span>
+                            <span className="text-[10px] font-bold text-secondary uppercase tracking-widest flex items-center gap-1.5"><TrendingUp className="h-3 w-3" /> Seasonal Special</span>
                             <span className="text-lg font-bold text-secondary">${room.seasonalRate}</span>
                           </div>
                         )}
                         <div className="pt-6 border-t border-slate-100 flex gap-3">
-                          <Button variant="outline" className="flex-1 rounded-xl font-bold h-12" onClick={() => { setSelectedRoom(room); setIsRoomModalOpen(true); }}>Adjust Rates</Button>
+                          <Button variant="outline" className="flex-1 rounded-xl font-bold h-12" onClick={() => { setSelectedRoom(room); setIsRoomModalOpen(true); }}>Modify Room</Button>
                           <Button variant="ghost" size="icon" className="rounded-xl h-12 w-12 text-red-500 hover:text-red-600 hover:bg-red-50">
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -690,8 +700,22 @@ export default function AdminDashboard() {
                       <div><p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Average Daily Rate (ADR)</p><h5 className="text-2xl font-headline font-bold text-primary">$185.00</h5></div>
                       <div className="h-12 w-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary"><TrendingUp className="h-6 w-6" /></div>
                     </div>
-                    <div className="p-6 rounded-3xl bg-slate-50 border border-slate-100 flex justify-between items-center">
-                      <div><p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">RevPAR</p><h5 className="text-2xl font-headline font-bold text-primary">$144.30</h5></div>
+                    <div className="p-6 rounded-3xl bg-slate-50 border border-slate-100 flex justify-between items-center relative group">
+                      <div>
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">RevPAR</p>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild><Info className="h-3 w-3 text-muted-foreground cursor-help" /></TooltipTrigger>
+                              <TooltipContent className="max-w-xs p-3 rounded-xl bg-[#0f172a] text-white border-none shadow-2xl">
+                                <p className="text-xs font-bold mb-1">Revenue Per Available Room</p>
+                                <p className="text-[10px] opacity-80 leading-relaxed uppercase">The standard metric for hotel financial health. It measures the hotel&apos;s ability to fill rooms at a high average rate.</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                        <h5 className="text-2xl font-headline font-bold text-primary">$144.30</h5>
+                      </div>
                       <div className="h-12 w-12 bg-secondary/10 rounded-2xl flex items-center justify-center text-secondary"><PieChartIcon className="h-6 w-6" /></div>
                     </div>
                   </div>
@@ -737,7 +761,6 @@ export default function AdminDashboard() {
         </div>
       </main>
 
-      {/* Modals */}
       <Dialog open={isRoomModalOpen} onOpenChange={setIsRoomModalOpen}>
         <DialogContent className="rounded-[2.5rem] border-none shadow-2xl p-10 max-w-md">
           <DialogHeader>
@@ -750,7 +773,17 @@ export default function AdminDashboard() {
               <Input name="price" type="number" defaultValue={selectedRoom?.price} className="h-14 rounded-xl bg-slate-50" required />
             </div>
             <div className="space-y-2">
-              <Label className="font-bold text-primary">Seasonal / Special Rate ($)</Label>
+              <div className="flex items-center gap-2 mb-1">
+                <Label className="font-bold text-primary">Seasonal / Special Rate ($)</Label>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild><Info className="h-3 w-3 text-muted-foreground cursor-help" /></TooltipTrigger>
+                    <TooltipContent className="max-w-xs p-3 rounded-xl bg-[#0f172a] text-white border-none shadow-2xl">
+                      <p className="text-[10px] opacity-80 leading-relaxed uppercase">Set a specific price for holidays or high-demand periods. This will override the base rate on the website.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
               <Input name="seasonalPrice" type="number" defaultValue={selectedRoom?.seasonalRate} placeholder="Leave empty for base rate only" className="h-14 rounded-xl bg-slate-50" />
             </div>
             <div className="space-y-2">
@@ -765,7 +798,7 @@ export default function AdminDashboard() {
                 </SelectContent>
               </Select>
             </div>
-            <Button type="submit" className="w-full h-14 rounded-xl font-bold text-lg shadow-xl shadow-primary/20">Synchronize Rates</Button>
+            <Button type="submit" className="w-full h-14 rounded-xl font-bold text-lg shadow-xl shadow-primary/20">Synchronize Inventory</Button>
           </form>
         </DialogContent>
       </Dialog>

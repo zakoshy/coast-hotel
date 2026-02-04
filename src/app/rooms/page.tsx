@@ -9,13 +9,19 @@ import { Waves, Coffee, Bath, Wind } from 'lucide-react';
 import BookingForm from '@/components/booking/BookingForm';
 import { cn } from '@/lib/utils';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection } from 'firebase/firestore';
+import { collection, query, where } from 'firebase/firestore';
 
 const PUBLIC_HOTEL_ID = 'coastal-sands-retreat';
 
 export default function RoomsPage() {
   const db = useFirestore();
-  const roomsQuery = useMemoFirebase(() => collection(db, 'hotels', PUBLIC_HOTEL_ID, 'rooms'), [db]);
+  
+  // Filter out rooms that are marked as out_of_order for public view
+  const roomsQuery = useMemoFirebase(() => {
+    const colRef = collection(db, 'hotels', PUBLIC_HOTEL_ID, 'rooms');
+    return query(colRef, where('status', '!=', 'out_of_order'));
+  }, [db]);
+  
   const { data: rooms, isLoading } = useCollection(roomsQuery);
 
   return (
@@ -33,7 +39,10 @@ export default function RoomsPage() {
           {isLoading ? (
             <p className="text-center text-muted-foreground">Fetching our finest collection...</p>
           ) : rooms?.length === 0 ? (
-            <p className="text-center text-muted-foreground italic">No rooms currently available. Please contact concierge.</p>
+            <div className="text-center py-20 space-y-6">
+              <p className="text-muted-foreground italic text-xl">No rooms currently available for booking online.</p>
+              <Button size="lg" className="rounded-2xl h-16 px-10 bg-primary font-bold">Contact Concierge Directly</Button>
+            </div>
           ) : (
             rooms?.map((room, idx) => (
               <div key={room.id} className={cn("flex flex-col gap-16 items-center", idx % 2 === 1 ? "lg:flex-row-reverse" : "lg:flex-row")}>
@@ -46,12 +55,12 @@ export default function RoomsPage() {
                   />
                   <div className="absolute top-8 left-8">
                     <Badge className="bg-white/95 text-primary font-bold text-2xl px-8 py-3 rounded-2xl shadow-xl backdrop-blur-md">
-                      ${room.price} <span className="text-xs opacity-70 font-normal ml-1">/ night</span>
+                      ${room.seasonalRate || room.price} <span className="text-xs opacity-70 font-normal ml-1">/ night</span>
                     </Badge>
                   </div>
                 </div>
                 <div className="w-full lg:w-2/5">
-                  <span className="text-secondary font-bold tracking-widest uppercase mb-4 block">Room #{room.roomNumber}</span>
+                  <span className="text-secondary font-bold tracking-widest uppercase mb-4 block">Refined Comfort</span>
                   <h2 className="text-4xl md:text-5xl font-headline font-bold text-primary mb-6 leading-tight">{room.roomType}</h2>
                   <p className="text-lg text-muted-foreground mb-10 leading-relaxed">{room.description || "A luxurious escape tailored for your comfort."}</p>
                   <div className="grid grid-cols-2 gap-x-8 gap-y-6 mb-12">
@@ -65,7 +74,10 @@ export default function RoomsPage() {
                     ))}
                   </div>
                   <div className="flex flex-col sm:flex-row gap-4">
-                    <Button size="lg" className="px-10 h-16 text-lg rounded-2xl bg-primary hover:bg-primary/90 text-white font-bold">Reserve Now</Button>
+                    <Button size="lg" className="px-10 h-16 text-lg rounded-2xl bg-primary hover:bg-primary/90 text-white font-bold" onClick={() => {
+                       const bookingSection = document.getElementById('booking');
+                       if (bookingSection) bookingSection.scrollIntoView({ behavior: 'smooth' });
+                    }}>Reserve Now</Button>
                   </div>
                 </div>
               </div>
