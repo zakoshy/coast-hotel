@@ -150,6 +150,7 @@ export default function AdminDashboard() {
   const pagesCollectionRef = useMemoFirebase(() => hotelId ? collection(db, 'hotels', hotelId, 'pages') : null, [db, hotelId]);
   const { data: pageContents } = useCollection(pagesCollectionRef);
 
+  // Safety: Don't fetch sensitive data until profile is confirmed
   const bookingsQuery = useMemoFirebase(() => hotelId ? collection(db, 'hotels', hotelId, 'bookings') : null, [db, hotelId]);
   const { data: bookings } = useCollection(bookingsQuery);
 

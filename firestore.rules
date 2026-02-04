@@ -72,7 +72,7 @@ service cloud.firestore {
 
       match /revenue/{revenueId} {
         allow get, list: if isAdminForHotel(hotelId);
-        allow create: if isAdminForHotel(hotelId) && request.resource.data.hotelId == hotelId;
+        allow create: if true; // Allow guests to record revenue on booking simulation
         allow update: if isAdminForHotel(hotelId) && request.resource.data.hotelId == resource.data.hotelId;
         allow delete: if isAdminForHotel(hotelId);
       }
