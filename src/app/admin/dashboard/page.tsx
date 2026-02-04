@@ -5,7 +5,6 @@ import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase, updateDo
 import { collection, doc } from 'firebase/firestore';
 import { 
   TrendingUp, 
-  Calendar, 
   DollarSign, 
   Hotel, 
   LogOut, 
@@ -50,8 +49,7 @@ import {
   Bar,
   PieChart,
   Pie,
-  Cell,
-  ResponsiveContainer
+  Cell
 } from 'recharts';
 import { useRouter } from 'next/navigation';
 import { getAuth, signOut } from 'firebase/auth';
@@ -67,7 +65,6 @@ import {
   DropdownMenu, 
   DropdownMenuContent, 
   DropdownMenuItem, 
-  DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
 import { 
