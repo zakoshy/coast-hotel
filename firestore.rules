@@ -40,6 +40,12 @@ service cloud.firestore {
       allow delete: if isSignedIn() && request.auth.uid == adminUserId && resource != null;
     }
 
+    // Explicitly allow public access to dynamic pages across all hotels
+    match /hotels/{hotelId}/pages/{pageId} {
+      allow read: if true;
+      allow write: if isAdminForHotel(hotelId);
+    }
+
     match /hotels/{hotelId} {
       // Allow public to see the hotel info and room listings
       allow get: if true;
@@ -47,11 +53,6 @@ service cloud.firestore {
       allow create: if isSignedIn(); 
       allow update: if isExistingHotelAdmin(hotelId);
       allow delete: if isExistingHotelAdmin(hotelId);
-
-      match /pages/{pageId} {
-        allow get, list: if true; // Public can see dynamic page content (Home, Dining, etc.)
-        allow create, update, delete: if isAdminForHotel(hotelId);
-      }
 
       match /rooms/{roomId} {
         allow get, list: if true; // Public can see room details

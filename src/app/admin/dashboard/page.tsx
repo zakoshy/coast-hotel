@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -17,7 +16,6 @@ import {
   MoreVertical,
   CheckCircle2,
   XCircle,
-  Clock,
   Edit,
   MessageSquare,
   Menu as MenuIcon,
@@ -35,7 +33,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { 
   ChartContainer, 
   ChartTooltip, 
@@ -135,22 +133,23 @@ export default function AdminDashboard() {
   const adminProfileRef = useMemoFirebase(() => user ? doc(db, 'admin_users', user.uid) : null, [db, user]);
   const { data: adminProfile, isLoading: isAdminProfileLoading } = useDoc(adminProfileRef);
 
-  const hotelId = adminProfile?.hotelId || PUBLIC_HOTEL_ID;
+  // Guard against guest access causing permission errors
+  const hotelId = adminProfile?.hotelId || (user ? PUBLIC_HOTEL_ID : null);
 
   const hotelRef = useMemoFirebase(() => hotelId ? doc(db, 'hotels', hotelId) : null, [db, hotelId]);
   const { data: hotelData } = useDoc(hotelRef);
 
-  // Dynamic Content Refs
-  const pagesCollectionRef = useMemoFirebase(() => hotelId ? collection(db, 'hotels', hotelId, 'pages') : null, [db, hotelId]);
+  // Dynamic Content Refs - only if user is logged in
+  const pagesCollectionRef = useMemoFirebase(() => (user && hotelId) ? collection(db, 'hotels', hotelId, 'pages') : null, [db, user, hotelId]);
   const { data: pageContents } = useCollection(pagesCollectionRef);
 
-  const bookingsQuery = useMemoFirebase(() => hotelId ? collection(db, 'hotels', hotelId, 'bookings') : null, [db, hotelId]);
+  const bookingsQuery = useMemoFirebase(() => (user && hotelId) ? collection(db, 'hotels', hotelId, 'bookings') : null, [db, user, hotelId]);
   const { data: bookings } = useCollection(bookingsQuery);
 
-  const roomsQuery = useMemoFirebase(() => hotelId ? collection(db, 'hotels', hotelId, 'rooms') : null, [db, hotelId]);
+  const roomsQuery = useMemoFirebase(() => (user && hotelId) ? collection(db, 'hotels', hotelId, 'rooms') : null, [db, user, hotelId]);
   const { data: rooms } = useCollection(roomsQuery);
 
-  const revenueQuery = useMemoFirebase(() => hotelId ? collection(db, 'hotels', hotelId, 'revenue') : null, [db, hotelId]);
+  const revenueQuery = useMemoFirebase(() => (user && hotelId) ? collection(db, 'hotels', hotelId, 'revenue') : null, [db, user, hotelId]);
   const { data: revenueData } = useCollection(revenueQuery);
 
   const filteredBookings = useMemo(() => {
