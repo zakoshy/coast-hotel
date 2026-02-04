@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
@@ -25,7 +24,10 @@ import {
   Edit,
   FileText,
   MessageSquare,
-  Menu as MenuIcon
+  Menu as MenuIcon,
+  Tag,
+  Hammer,
+  ArrowRight
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -91,7 +93,7 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-type ViewState = 'overview' | 'bookings' | 'profile';
+type ViewState = 'overview' | 'bookings' | 'rooms' | 'profile';
 
 export default function AdminDashboard() {
   const { user, isUserLoading } = useUser();
@@ -100,21 +102,23 @@ export default function AdminDashboard() {
 
   const [activeView, setActiveView] = useState<ViewState>('overview');
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
+  const [selectedRoom, setSelectedRoom] = useState<any>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isRoomModalOpen, setIsRoomModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   // Filters
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  // Handle Redirection - Correctly wrapped in useEffect
+  // Handle Redirection
   useEffect(() => {
     if (!isUserLoading && !user) {
       router.push('/admin/login');
     }
   }, [user, isUserLoading, router]);
 
-  // Fetch Admin User Profile to get hotelId
+  // Fetch Admin User Profile
   const adminProfileRef = useMemoFirebase(() => {
     if (!db || !user) return null;
     return doc(db, 'admin_users', user.uid);
@@ -136,6 +140,13 @@ export default function AdminDashboard() {
     return collection(db, 'hotels', hotelId, 'bookings');
   }, [db, hotelId]);
   const { data: bookings } = useCollection(bookingsQuery);
+
+  // Fetch Rooms
+  const roomsQuery = useMemoFirebase(() => {
+    if (!db || !hotelId) return null;
+    return collection(db, 'hotels', hotelId, 'rooms');
+  }, [db, hotelId]);
+  const { data: rooms } = useCollection(roomsQuery);
 
   // Fetch Revenue
   const revenueQuery = useMemoFirebase(() => {
@@ -185,6 +196,35 @@ export default function AdminDashboard() {
     setIsEditModalOpen(false);
   };
 
+  const handleSaveRoomUpdate = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!db || !hotelId || !selectedRoom) return;
+
+    const roomRef = doc(db, 'hotels', hotelId, 'rooms', selectedRoom.id);
+    const formData = new FormData(e.currentTarget as HTMLFormElement);
+
+    const updateData: any = {
+      price: Number(formData.get('price')),
+      status: formData.get('status'),
+    };
+
+    // Add seasonal rate if provided
+    const seasonalPrice = formData.get('seasonalPrice');
+    const seasonalStart = formData.get('seasonalStart');
+    const seasonalEnd = formData.get('seasonalEnd');
+
+    if (seasonalPrice && seasonalStart && seasonalEnd) {
+      updateData.seasonalRate = {
+        price: Number(seasonalPrice),
+        startDate: seasonalStart,
+        endDate: seasonalEnd
+      };
+    }
+
+    updateDocumentNonBlocking(roomRef, updateData);
+    setIsRoomModalOpen(false);
+  };
+
   if (isUserLoading || isAdminProfileLoading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-muted/10">
@@ -195,7 +235,7 @@ export default function AdminDashboard() {
   }
   
   if (!user) {
-    return null; // The useEffect handles redirection
+    return null;
   }
 
   if (!adminProfile && !isAdminProfileLoading) {
@@ -205,7 +245,7 @@ export default function AdminDashboard() {
           <ShieldCheck className="h-16 w-16 text-secondary mx-auto mb-6" />
           <h2 className="text-3xl font-headline font-bold text-primary mb-4">Profile Not Initialized</h2>
           <p className="text-muted-foreground mb-8">
-            Your account exists, but your administrator profile has not been set up in the database. Please contact the system administrator.
+            Your account exists, but your administrator profile has not been set up. Please contact system support.
           </p>
           <Button onClick={handleLogout} variant="outline" className="w-full rounded-xl">
             Sign Out
@@ -249,7 +289,17 @@ export default function AdminDashboard() {
           activeView === 'bookings' ? "bg-white/10 text-white" : ""
         )}
       >
-        <Calendar className="mr-3 h-5 w-5" /> All Bookings
+        <Calendar className="mr-3 h-5 w-5" /> Bookings
+      </Button>
+      <Button 
+        variant="ghost" 
+        onClick={() => { setActiveView('rooms'); setIsMobileMenuOpen(false); }}
+        className={cn(
+          "w-full justify-start text-white/60 hover:bg-white/10 hover:text-white rounded-xl h-12 transition-all",
+          activeView === 'rooms' ? "bg-white/10 text-white" : ""
+        )}
+      >
+        <Hotel className="mr-3 h-5 w-5" /> Room &amp; Rates
       </Button>
       <Button 
         variant="ghost" 
@@ -261,19 +311,12 @@ export default function AdminDashboard() {
       >
         <UserIcon className="mr-3 h-5 w-5" /> My Profile
       </Button>
-      
-      <div className="pt-8">
-        <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-4 ml-2">System</p>
-        <Button variant="ghost" className="w-full justify-start text-white/60 hover:bg-white/10 hover:text-white rounded-xl h-12">
-          <Settings className="mr-3 h-5 w-5" /> Settings
-        </Button>
-      </div>
     </nav>
   );
 
   return (
     <div className="min-h-screen bg-[#f8fafc]">
-      {/* Sidebar Navigation - Desktop */}
+      {/* Sidebar - Desktop */}
       <div className="fixed left-0 top-0 bottom-0 w-72 bg-[#0f172a] text-white p-8 hidden lg:flex flex-col">
         <div className="mb-12">
           <h2 className="text-2xl font-headline font-bold tracking-tight">COASTAL SANDS</h2>
@@ -282,7 +325,6 @@ export default function AdminDashboard() {
         
         <NavContent />
 
-        {/* Profile Sidebar Section */}
         <div className="pt-8 border-t border-white/10">
           <div className="flex items-center gap-4 mb-6 px-2">
             <Avatar className="h-12 w-12 border-2 border-secondary shadow-lg">
@@ -306,11 +348,10 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Main Content Area */}
+      {/* Main Content */}
       <div className="lg:ml-72 p-6 md:p-10">
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
           <div className="flex items-center gap-4 w-full md:w-auto">
-            {/* Mobile Menu Toggle */}
             <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
               <SheetTrigger asChild>
                 <Button variant="outline" size="icon" className="lg:hidden rounded-xl border-slate-200">
@@ -322,46 +363,36 @@ export default function AdminDashboard() {
                   <SheetTitle className="text-white font-headline text-2xl">COASTAL SANDS</SheetTitle>
                 </SheetHeader>
                 <NavContent />
-                <div className="mt-auto pt-8 border-t border-white/10">
-                   <Button 
-                    variant="outline" 
-                    className="w-full border-white/10 bg-white/5 text-white hover:bg-white/10 rounded-xl h-12" 
-                    onClick={handleLogout}
-                  >
-                    <LogOut className="mr-3 h-4 w-4" /> Sign Out
-                  </Button>
-                </div>
               </SheetContent>
             </Sheet>
 
             <div>
               <h1 className="text-3xl md:text-4xl font-headline font-bold text-[#0f172a]">
-                {activeView === 'overview' ? "Operations Overview" : activeView === 'bookings' ? "Booking Management" : "Account Profile"}
+                {activeView === 'overview' ? "Operations Overview" : 
+                 activeView === 'bookings' ? "Booking Management" : 
+                 activeView === 'rooms' ? "Room &amp; Rate Manager" : "Account Profile"}
               </h1>
-              <p className="text-muted-foreground mt-1 flex items-center gap-2">
+              <p className="text-muted-foreground mt-1 flex items-center gap-2 text-sm">
                 <Hotel className="h-4 w-4" /> {hotelData?.name || "Coastal Sands Retreat"} • {adminProfile?.role || "Manager"}
               </p>
             </div>
           </div>
 
-          {activeView !== 'profile' && (
-            <div className="flex items-center gap-4 w-full md:w-auto">
-              <div className="relative flex-grow md:flex-grow-0">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <input 
-                  placeholder="Search guests or emails..." 
-                  className="pl-12 h-12 w-full md:w-72 rounded-2xl border-none bg-white shadow-sm focus:ring-2 focus:ring-primary/20 transition-all"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
+          {(activeView === 'overview' || activeView === 'bookings') && (
+            <div className="relative w-full md:w-auto">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <input 
+                placeholder="Search guest logs..." 
+                className="pl-12 h-12 w-full md:w-72 rounded-2xl border-none bg-white shadow-sm focus:ring-2 focus:ring-primary/20"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
             </div>
           )}
         </header>
 
         {activeView === 'overview' && (
           <>
-            {/* KPI Tiles */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
               {[
                 { label: "Total Revenue", val: `$${totalRevenue.toLocaleString()}`, icon: <DollarSign />, trend: "+12.5%", color: "bg-emerald-500" },
@@ -369,7 +400,7 @@ export default function AdminDashboard() {
                 { label: "Occupancy Rate", val: occupancyRate, icon: <Hotel />, trend: "+2.1%", color: "bg-secondary" },
                 { label: "Avg. Daily Rate", val: "$310", icon: <TrendingUp />, trend: "+1.4%", color: "bg-amber-500" }
               ].map((kpi, i) => (
-                <Card key={i} className="border-none shadow-sm rounded-[2rem] overflow-hidden bg-white hover:shadow-md transition-all duration-300">
+                <Card key={i} className="border-none shadow-sm rounded-[2rem] overflow-hidden bg-white">
                   <CardContent className="p-8">
                     <div className="flex justify-between items-start mb-6">
                       <div className={`p-4 rounded-2xl text-white ${kpi.color} shadow-lg shadow-${kpi.color.split('-')[1]}-500/20`}>
@@ -411,7 +442,7 @@ export default function AdminDashboard() {
               </Card>
 
               <Card className="lg:col-span-1 border-none shadow-sm rounded-[2.5rem] bg-white p-10">
-                <CardTitle className="text-2xl font-headline font-bold text-slate-900 mb-8">Recent Bookings</CardTitle>
+                <CardTitle className="text-2xl font-headline font-bold text-slate-900 mb-8">Recent Activity</CardTitle>
                 <div className="space-y-6">
                   {(bookings?.slice(0, 5) || []).map((b, i) => (
                     <div key={i} className="flex items-center justify-between pb-6 border-b border-slate-50 last:border-none">
@@ -440,148 +471,215 @@ export default function AdminDashboard() {
         )}
 
         {activeView === 'bookings' && (
-          <div className="space-y-6">
-            <Card className="border-none shadow-sm rounded-[2.5rem] bg-white p-10 overflow-hidden">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2 bg-slate-50 p-1 rounded-xl overflow-x-auto max-w-[calc(100vw-4rem)]">
-                    {['all', 'confirmed', 'pending', 'cancelled'].map((status) => (
-                      <Button
-                        key={status}
-                        variant={statusFilter === status ? 'default' : 'ghost'}
-                        size="sm"
-                        onClick={() => setStatusFilter(status)}
-                        className={cn("rounded-lg font-bold capitalize transition-all shrink-0", statusFilter === status ? "bg-primary text-white" : "text-muted-foreground")}
-                      >
-                        {status}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-                <Button variant="outline" className="rounded-xl gap-2 font-bold w-full md:w-auto">
-                  <Filter className="h-4 w-4" /> Filter by Date
-                </Button>
+          <Card className="border-none shadow-sm rounded-[2.5rem] bg-white p-10 overflow-hidden">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+              <div className="flex items-center gap-2 bg-slate-50 p-1 rounded-xl">
+                {['all', 'confirmed', 'pending', 'cancelled'].map((status) => (
+                  <Button
+                    key={status}
+                    variant={statusFilter === status ? 'default' : 'ghost'}
+                    size="sm"
+                    onClick={() => setStatusFilter(status)}
+                    className={cn("rounded-lg font-bold capitalize shrink-0", statusFilter === status ? "bg-primary text-white" : "text-muted-foreground")}
+                  >
+                    {status}
+                  </Button>
+                ))}
               </div>
+            </div>
 
-              <div className="rounded-2xl border border-slate-100 overflow-x-auto">
-                <Table>
-                  <TableHeader className="bg-slate-50/50">
-                    <TableRow className="border-none">
-                      <TableHead className="font-bold">Guest & Requests</TableHead>
-                      <TableHead className="font-bold">Stay Dates</TableHead>
-                      <TableHead className="font-bold">Room Detail</TableHead>
-                      <TableHead className="font-bold">Financials</TableHead>
-                      <TableHead className="font-bold">Status</TableHead>
-                      <TableHead className="font-bold text-right">Actions</TableHead>
+            <div className="rounded-2xl border border-slate-100 overflow-x-auto">
+              <Table>
+                <TableHeader className="bg-slate-50/50">
+                  <TableRow className="border-none">
+                    <TableHead className="font-bold">Guest Details</TableHead>
+                    <TableHead className="font-bold">Stay Period</TableHead>
+                    <TableHead className="font-bold">Room</TableHead>
+                    <TableHead className="font-bold">Financials</TableHead>
+                    <TableHead className="font-bold">Status</TableHead>
+                    <TableHead className="font-bold text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredBookings.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-20 text-muted-foreground font-medium">
+                        No reservations matching criteria.
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredBookings.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={6} className="text-center py-20 text-muted-foreground">
-                          No reservations found in the current log.
+                  ) : (
+                    filteredBookings.map((b) => (
+                      <TableRow key={b.id} className="hover:bg-slate-50/50 transition-colors">
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar className="h-9 w-9">
+                              <AvatarFallback className="bg-primary/5 text-primary text-xs font-bold">{b.guestName[0]}</AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-bold text-slate-900 leading-none mb-1">{b.guestName}</p>
+                              <p className="text-[10px] text-muted-foreground">{b.guestEmail}</p>
+                              {b.specialRequests && (
+                                <div className="mt-1 flex items-center gap-1 text-[9px] text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded border border-amber-100 w-fit">
+                                  <MessageSquare className="h-2.5 w-2.5" /> {b.specialRequests}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            <p className="font-medium text-slate-900">{format(new Date(b.checkInDate), 'MMM dd')} - {format(new Date(b.checkOutDate), 'MMM dd')}</p>
+                            <p className="text-[10px] text-muted-foreground">Stay: {Math.ceil((new Date(b.checkOutDate).getTime() - new Date(b.checkInDate).getTime()) / (1000 * 3600 * 24))} nights</p>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <p className="text-sm font-medium text-slate-900">{b.roomType}</p>
+                          <p className="text-[10px] text-muted-foreground">{b.numberOfGuests} Guests</p>
+                        </TableCell>
+                        <TableCell>
+                          <p className="text-sm font-bold text-slate-900">${b.totalAmount}</p>
+                          <Badge variant="outline" className={cn(
+                            "text-[9px] h-4 py-0 font-bold",
+                            b.paymentStatus === 'paid' ? "border-emerald-200 text-emerald-600 bg-emerald-50" : "border-amber-200 text-amber-600 bg-amber-50"
+                          )}>
+                            {b.paymentStatus || 'pending'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={cn(
+                            "border-none font-bold text-[10px]",
+                            b.status === 'confirmed' ? "bg-emerald-50 text-emerald-600" : 
+                            b.status === 'pending' ? "bg-amber-50 text-amber-600" : "bg-red-50 text-red-600"
+                          )}>
+                            {b.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <MoreVertical className="h-4 w-4 text-slate-400" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-56 rounded-xl shadow-xl p-2 border-slate-100">
+                              <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-slate-400 font-bold">Manage Booking</DropdownMenuLabel>
+                              {b.status !== 'confirmed' && (
+                                <DropdownMenuItem onClick={() => handleUpdateBookingStatus(b.id, 'confirmed')} className="rounded-lg text-emerald-600 font-bold">
+                                  <CheckCircle2 className="mr-2 h-4 w-4" /> Confirm Reservation
+                                </DropdownMenuItem>
+                              )}
+                              {b.status !== 'cancelled' && (
+                                <DropdownMenuItem onClick={() => handleUpdateBookingStatus(b.id, 'cancelled')} className="rounded-lg text-red-600 font-bold">
+                                  <XCircle className="mr-2 h-4 w-4" /> Cancel &amp; Void
+                                </DropdownMenuItem>
+                              )}
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => { setSelectedBooking(b); setIsEditModalOpen(true); }} className="rounded-lg font-bold">
+                                <Edit className="mr-2 h-4 w-4" /> Edit Details
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </TableCell>
                       </TableRow>
-                    ) : (
-                      filteredBookings.map((b) => (
-                        <TableRow key={b.id} className="hover:bg-slate-50/50 transition-colors">
-                          <TableCell>
-                            <div className="flex items-center gap-3">
-                              <Avatar className="h-9 w-9">
-                                <AvatarFallback className="bg-primary/5 text-primary text-xs font-bold">{b.guestName[0]}</AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <p className="font-bold text-slate-900 leading-none mb-1">{b.guestName}</p>
-                                <p className="text-[10px] text-muted-foreground mb-2">{b.guestEmail}</p>
-                                {b.specialRequests && (
-                                  <div className="flex items-center gap-1.5 text-[10px] text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md w-fit font-medium">
-                                    <MessageSquare className="h-3 w-3" /> Request: {b.specialRequests}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="text-sm">
-                              <p className="font-medium text-slate-900">{format(new Date(b.checkInDate), 'MMM dd')} - {format(new Date(b.checkOutDate), 'MMM dd, yyyy')}</p>
-                              <p className="text-[10px] text-muted-foreground flex items-center gap-1">
-                                <Clock className="h-3 w-3" /> Booked {format(new Date(b.bookingDate), 'MMM dd')}
-                              </p>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="text-sm">
-                              <p className="font-medium text-slate-900">{b.roomType}</p>
-                              <p className="text-xs text-muted-foreground">{b.numberOfGuests} Guest(s)</p>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="text-sm">
-                              <p className="font-bold text-slate-900">${b.totalAmount}</p>
-                              <Badge variant="outline" className={cn(
-                                "text-[10px] py-0 px-2 font-bold",
-                                b.paymentStatus === 'paid' ? "border-emerald-200 text-emerald-600 bg-emerald-50" : "border-amber-200 text-amber-600 bg-amber-50"
-                              )}>
-                                {b.paymentStatus || 'pending'}
-                              </Badge>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge className={cn(
-                              "border-none font-bold",
-                              b.status === 'confirmed' ? "bg-emerald-50 text-emerald-600" : 
-                              b.status === 'pending' ? "bg-amber-50 text-amber-600" : "bg-red-50 text-red-600"
-                            )}>
-                              {b.status}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 rounded-lg hover:bg-slate-100">
-                                  <MoreVertical className="h-4 w-4 text-slate-500" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end" className="w-56 rounded-xl border-slate-100 shadow-xl p-2">
-                                <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">Management</DropdownMenuLabel>
-                                {b.status !== 'confirmed' && (
-                                  <DropdownMenuItem 
-                                    onClick={() => handleUpdateBookingStatus(b.id, 'confirmed')}
-                                    className="rounded-lg text-emerald-600 font-bold focus:bg-emerald-50 focus:text-emerald-700"
-                                  >
-                                    <CheckCircle2 className="mr-2 h-4 w-4" /> Confirm & Notify
-                                  </DropdownMenuItem>
-                                )}
-                                {b.status !== 'cancelled' && (
-                                  <DropdownMenuItem 
-                                    onClick={() => handleUpdateBookingStatus(b.id, 'cancelled')}
-                                    className="rounded-lg text-red-600 font-bold focus:bg-red-50 focus:text-red-700"
-                                  >
-                                    <XCircle className="mr-2 h-4 w-4" /> Cancel & Refund
-                                  </DropdownMenuItem>
-                                )}
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem 
-                                  onClick={() => {
-                                    setSelectedBooking(b);
-                                    setIsEditModalOpen(true);
-                                  }}
-                                  className="rounded-lg font-bold"
-                                >
-                                  <Edit className="mr-2 h-4 w-4" /> Modify Booking
-                                </DropdownMenuItem>
-                                <DropdownMenuItem className="rounded-lg font-bold">
-                                  <FileText className="mr-2 h-4 w-4" /> Add Private Note
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      ))
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </Card>
+        )}
+
+        {activeView === 'rooms' && (
+          <div className="space-y-8">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {(rooms || []).map((room) => (
+                <Card key={room.id} className="border-none shadow-sm rounded-[2.5rem] bg-white overflow-hidden group hover:shadow-xl transition-all duration-300">
+                  <div className="relative h-48 bg-slate-100">
+                    <img 
+                      src={room.imageUrls?.[0] || `https://picsum.photos/seed/${room.id}/600/400`} 
+                      className="w-full h-full object-cover" 
+                      alt={room.roomType} 
+                    />
+                    <div className="absolute top-4 right-4 flex gap-2">
+                       <Badge className={cn(
+                        "font-bold border-none shadow-lg",
+                        room.status === 'out_of_order' ? "bg-red-500 text-white" : "bg-emerald-500 text-white"
+                      )}>
+                        {room.status === 'out_of_order' ? 'Out of Order' : 'Active'}
+                      </Badge>
+                    </div>
+                  </div>
+                  <CardContent className="p-8">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="text-xl font-headline font-bold text-slate-900">{room.roomType}</h3>
+                        <p className="text-xs text-muted-foreground">Room #{room.roomNumber}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-bold text-primary">${room.price}</p>
+                        <p className="text-[10px] text-muted-foreground uppercase font-bold tracking-widest">Base Rate</p>
+                      </div>
+                    </div>
+                    
+                    {room.seasonalRate && (
+                      <div className="mb-6 p-4 bg-amber-50 rounded-2xl border border-amber-100">
+                         <div className="flex items-center justify-between mb-2">
+                            <span className="text-[10px] font-bold text-amber-700 uppercase tracking-widest">Seasonal Rate Active</span>
+                            <span className="text-sm font-bold text-amber-900">${room.seasonalRate.price}</span>
+                         </div>
+                         <div className="flex items-center gap-2 text-[10px] text-amber-600 font-medium">
+                            <Clock className="h-3 w-3" />
+                            {format(new Date(room.seasonalRate.startDate), 'MMM dd')} - {format(new Date(room.seasonalRate.endDate), 'MMM dd, yyyy')}
+                         </div>
+                      </div>
                     )}
-                  </TableBody>
-                </Table>
-              </div>
+
+                    <div className="grid grid-cols-2 gap-3 mt-6">
+                       <Button 
+                        variant="outline" 
+                        className="rounded-xl font-bold gap-2 text-xs"
+                        onClick={() => { setSelectedRoom(room); setIsRoomModalOpen(true); }}
+                      >
+                         <Tag className="h-3 w-3 text-secondary" /> Adjust Rates
+                       </Button>
+                       <Button 
+                        variant="outline" 
+                        className={cn(
+                          "rounded-xl font-bold gap-2 text-xs",
+                          room.status === 'out_of_order' ? "bg-red-50 text-red-600 border-red-100" : ""
+                        )}
+                        onClick={() => {
+                          if (!db || !hotelId) return;
+                          const roomRef = doc(db, 'hotels', hotelId, 'rooms', room.id);
+                          updateDocumentNonBlocking(roomRef, { status: room.status === 'out_of_order' ? 'active' : 'out_of_order' });
+                        }}
+                      >
+                         <Hammer className="h-3 w-3" /> {room.status === 'out_of_order' ? 'Fix Status' : 'Mark OOO'}
+                       </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+            
+            <Card className="border-none shadow-sm rounded-[2.5rem] bg-white p-10">
+               <CardTitle className="text-2xl font-headline font-bold mb-8">Quick Availability Preview</CardTitle>
+               <div className="grid grid-cols-7 gap-4">
+                  {[...Array(7)].map((_, i) => {
+                    const date = new Date();
+                    date.setDate(date.getDate() + i);
+                    return (
+                      <div key={i} className="text-center p-4 bg-slate-50 rounded-2xl">
+                         <p className="text-[10px] font-bold text-muted-foreground uppercase mb-1">{format(date, 'EEE')}</p>
+                         <p className="text-lg font-bold text-primary">{format(date, 'dd')}</p>
+                         <div className="mt-2 h-1.5 w-full bg-emerald-500 rounded-full" title="Fully Available" />
+                      </div>
+                    );
+                  })}
+               </div>
+               <p className="text-xs text-muted-foreground mt-6 italic flex items-center gap-2">
+                 <Clock className="h-3.5 w-3.5" /> Showing next 7 days availability. Real-time sync enabled with OTA channels.
+               </p>
             </Card>
           </div>
         )}
@@ -589,8 +687,7 @@ export default function AdminDashboard() {
         {activeView === 'profile' && (
           <div className="max-w-2xl mx-auto">
             <Card className="border-none shadow-sm rounded-[2.5rem] bg-white overflow-hidden">
-              <div className="bg-primary p-12 text-center text-white relative">
-                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-2xl" />
+              <div className="bg-primary p-12 text-center text-white">
                  <Avatar className="h-32 w-32 border-4 border-white mx-auto mb-6 shadow-2xl">
                     <AvatarImage src={`https://picsum.photos/seed/${user.uid}/200/200`} />
                     <AvatarFallback className="bg-secondary text-white text-4xl font-headline font-bold">
@@ -602,32 +699,19 @@ export default function AdminDashboard() {
               </div>
               <CardContent className="p-10 space-y-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                   <div className="space-y-2">
-                     <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Full Name</p>
+                   <div className="space-y-1">
+                     <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Full Identity</p>
                      <p className="text-lg font-bold text-slate-900">{adminProfile?.username}</p>
                    </div>
-                   <div className="space-y-2">
-                     <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">System Email</p>
+                   <div className="space-y-1">
+                     <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">System Email</p>
                      <p className="text-lg font-bold text-slate-900">{user.email}</p>
-                   </div>
-                   <div className="space-y-2">
-                     <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Assigned Hotel ID</p>
-                     <p className="text-sm font-mono text-slate-500 bg-slate-50 p-2 rounded-lg">{adminProfile?.hotelId}</p>
-                   </div>
-                   <div className="space-y-2">
-                     <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Authorization Level</p>
-                     <Badge className="bg-primary/10 text-primary font-bold">{adminProfile?.role}</Badge>
                    </div>
                 </div>
                 
-                <DropdownMenuSeparator className="my-8" />
-                
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <Button className="flex-1 h-14 rounded-xl font-bold bg-primary text-white shadow-lg shadow-primary/20">
-                    Edit Profile Details
-                  </Button>
-                  <Button onClick={handleLogout} variant="outline" className="flex-1 h-14 rounded-xl font-bold border-red-100 text-red-600 hover:bg-red-50 hover:text-red-700">
-                    <LogOut className="mr-2 h-5 w-5" /> Sign Out from Dashboard
+                <div className="flex flex-col sm:flex-row gap-4 pt-6">
+                  <Button onClick={handleLogout} variant="outline" className="w-full h-14 rounded-xl font-bold border-red-100 text-red-600 hover:bg-red-50">
+                    <LogOut className="mr-2 h-5 w-5" /> Terminate Session
                   </Button>
                 </div>
               </CardContent>
@@ -635,46 +719,108 @@ export default function AdminDashboard() {
           </div>
         )}
 
+        {/* Room Manager Modal */}
+        <Dialog open={isRoomModalOpen} onOpenChange={setIsRoomModalOpen}>
+           <DialogContent className="sm:max-w-[550px] rounded-[2.5rem] p-10">
+              <DialogHeader>
+                 <DialogTitle className="text-3xl font-headline font-bold text-primary">Rate Optimization</DialogTitle>
+                 <DialogDescription>Configuring yield and seasonal rates for {selectedRoom?.roomType}</DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleSaveRoomUpdate} className="space-y-6 mt-6">
+                 <div className="space-y-2">
+                    <Label className="font-bold text-xs uppercase tracking-widest text-slate-500">Base Nightly Rate ($)</Label>
+                    <Input name="price" type="number" defaultValue={selectedRoom?.price} className="rounded-xl h-12" required />
+                 </div>
+                 
+                 <div className="p-6 bg-slate-50 rounded-[2rem] border border-slate-100 space-y-4">
+                    <p className="text-sm font-bold text-primary flex items-center gap-2">
+                       <TrendingUp className="h-4 w-4 text-secondary" /> Seasonal Adjustment
+                    </p>
+                    <div className="grid grid-cols-1 gap-4">
+                       <div className="space-y-2">
+                          <Label className="text-[10px] font-bold uppercase text-slate-400">Seasonal Rate ($)</Label>
+                          <Input name="seasonalPrice" type="number" placeholder="e.g., 450" className="rounded-xl bg-white" />
+                       </div>
+                       <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                             <Label className="text-[9px] font-bold text-slate-400 uppercase">Starts</Label>
+                             <Input name="seasonalStart" type="date" className="rounded-xl bg-white" />
+                          </div>
+                          <div className="space-y-1">
+                             <Label className="text-[9px] font-bold text-slate-400 uppercase">Ends</Label>
+                             <Input name="seasonalEnd" type="date" className="rounded-xl bg-white" />
+                          </div>
+                       </div>
+                    </div>
+                 </div>
+
+                 <div className="space-y-2">
+                    <Label className="font-bold text-xs uppercase tracking-widest text-slate-500">Inventory Status</Label>
+                    <Select name="status" defaultValue={selectedRoom?.status || 'active'}>
+                       <SelectTrigger className="rounded-xl h-12">
+                          <SelectValue placeholder="Select Status" />
+                       </SelectTrigger>
+                       <SelectContent>
+                          <SelectItem value="active">Active &amp; Bookable</SelectItem>
+                          <SelectItem value="out_of_order">Out of Order / Maintenance</SelectItem>
+                          <SelectItem value="hidden">Hidden from Public</SelectItem>
+                       </SelectContent>
+                    </Select>
+                 </div>
+
+                 <DialogFooter className="pt-6">
+                    <Button type="button" variant="ghost" onClick={() => setIsRoomModalOpen(false)}>Discard</Button>
+                    <Button type="submit" className="rounded-xl bg-primary text-white font-bold px-8">Save Inventory Logic</Button>
+                 </DialogFooter>
+              </form>
+           </DialogContent>
+        </Dialog>
+
         {/* Edit Booking Modal */}
         <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-          <DialogContent className="sm:max-w-[500px] rounded-[2.5rem] border-none shadow-2xl p-6 md:p-10">
-            <DialogHeader className="mb-6">
+          <DialogContent className="sm:max-w-[500px] rounded-[2.5rem] p-10">
+            <DialogHeader>
               <DialogTitle className="text-3xl font-headline font-bold text-primary">Modify Reservation</DialogTitle>
-              <DialogDescription className="text-muted-foreground">Adjust stay details for {selectedBooking?.guestName}</DialogDescription>
+              <DialogDescription>Adjust details for {selectedBooking?.guestName}</DialogDescription>
             </DialogHeader>
-            <form onSubmit={handleSaveBookingEdit} className="space-y-6">
+            <form onSubmit={handleSaveBookingEdit} className="space-y-6 mt-6">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="checkIn" className="font-bold text-xs uppercase tracking-widest text-slate-500">Check In</Label>
-                  <Input id="checkIn" name="checkIn" type="date" defaultValue={selectedBooking?.checkInDate?.split('T')[0]} className="rounded-xl h-12" />
+                  <Label className="font-bold text-xs uppercase tracking-widest text-slate-500">Check In</Label>
+                  <Input name="checkIn" type="date" defaultValue={selectedBooking?.checkInDate?.split('T')[0]} className="rounded-xl h-12" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="checkOut" className="font-bold text-xs uppercase tracking-widest text-slate-500">Check Out</Label>
-                  <Input id="checkOut" name="checkOut" type="date" defaultValue={selectedBooking?.checkOutDate?.split('T')[0]} className="rounded-xl h-12" />
+                  <Label className="font-bold text-xs uppercase tracking-widest text-slate-500">Check Out</Label>
+                  <Input name="checkOut" type="date" defaultValue={selectedBooking?.checkOutDate?.split('T')[0]} className="rounded-xl h-12" />
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="roomType" className="font-bold text-xs uppercase tracking-widest text-slate-500">Room Category</Label>
+                <Label className="font-bold text-xs uppercase tracking-widest text-slate-500">Room Category</Label>
                 <Select name="roomType" defaultValue={selectedBooking?.roomType}>
                   <SelectTrigger className="rounded-xl h-12">
                     <SelectValue placeholder="Select Room" />
                   </SelectTrigger>
-                  <SelectContent className="rounded-xl">
-                    <SelectItem value="Ocean Deluxe Room">Ocean Deluxe Room</SelectItem>
-                    <SelectItem value="Junior Garden Suite">Junior Garden Suite</SelectItem>
-                    <SelectItem value="Swahili Garden Villa">Swahili Garden Villa</SelectItem>
-                    <SelectItem value="Family Ocean Suite">Family Ocean Suite</SelectItem>
-                    <SelectItem value="Grand Presidential Suite">Grand Presidential Suite</SelectItem>
+                  <SelectContent>
+                    {(rooms || []).map(r => (
+                      <SelectItem key={r.id} value={r.roomType}>{r.roomType}</SelectItem>
+                    ))}
+                    {!rooms?.length && (
+                      <>
+                        <SelectItem value="Ocean Deluxe Room">Ocean Deluxe Room</SelectItem>
+                        <SelectItem value="Junior Garden Suite">Junior Garden Suite</SelectItem>
+                        <SelectItem value="Swahili Garden Villa">Swahili Garden Villa</SelectItem>
+                      </>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="paymentStatus" className="font-bold text-xs uppercase tracking-widest text-slate-500">Settlement Status</Label>
+                <Label className="font-bold text-xs uppercase tracking-widest text-slate-500">Payment Status</Label>
                 <Select name="paymentStatus" defaultValue={selectedBooking?.paymentStatus || 'pending'}>
                   <SelectTrigger className="rounded-xl h-12">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
-                  <SelectContent className="rounded-xl">
+                  <SelectContent>
                     <SelectItem value="paid">Paid (Settled)</SelectItem>
                     <SelectItem value="pending">Pending Payment</SelectItem>
                     <SelectItem value="refunded">Refunded / Reversal</SelectItem>
@@ -682,11 +828,11 @@ export default function AdminDashboard() {
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="notes" className="font-bold text-xs uppercase tracking-widest text-slate-500">Internal Management Notes</Label>
-                <Textarea id="notes" name="notes" placeholder="e.g., Anniversary guest, late check-out requested..." defaultValue={selectedBooking?.internalNotes} className="rounded-xl min-h-[100px]" />
+                <Label className="font-bold text-xs uppercase tracking-widest text-slate-500">Management Notes</Label>
+                <Textarea name="notes" placeholder="e.g., Anniversary guest, late arrival..." defaultValue={selectedBooking?.internalNotes} className="rounded-xl min-h-[100px]" />
               </div>
               <DialogFooter className="pt-6">
-                <Button type="button" variant="ghost" onClick={() => setIsEditModalOpen(false)} className="rounded-xl">Discard</Button>
+                <Button type="button" variant="ghost" onClick={() => setIsEditModalOpen(false)}>Discard</Button>
                 <Button type="submit" className="rounded-xl bg-primary text-white font-bold px-8">Update Records</Button>
               </DialogFooter>
             </form>
