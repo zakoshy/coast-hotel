@@ -4,7 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, CalendarCheck } from 'lucide-react';
+import { Menu, X, CalendarCheck, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import {
@@ -21,6 +21,7 @@ const Navbar = () => {
   const [scrolled, setScrolled] = useState(false);
   const pathname = usePathname();
   const isHomePage = pathname === '/';
+  const isAdminPage = pathname?.startsWith('/admin');
 
   useEffect(() => {
     const handleScroll = () => {
@@ -29,6 +30,9 @@ const Navbar = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Don't show public navbar on admin pages
+  if (isAdminPage) return null;
 
   const navLinks = [
     { name: 'Home', href: '/' },
@@ -79,21 +83,26 @@ const Navbar = () => {
             </Link>
           ))}
           
-          <Dialog>
-            <DialogTrigger asChild>
-              <Button className="bg-primary hover:bg-primary/90 text-white rounded-full px-8 shadow-lg font-bold gap-2">
-                <CalendarCheck className="h-4 w-4" />
-                Book Now
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px] rounded-[2rem] p-10 border-none shadow-2xl">
-              <DialogHeader className="mb-6">
-                <DialogTitle className="text-3xl font-headline font-bold text-primary text-center">Reserve Your Sanctuary</DialogTitle>
-                <p className="text-center text-muted-foreground">Select your preferred dates and guest count below.</p>
-              </DialogHeader>
-              <BookingForm layout="vertical" />
-            </DialogContent>
-          </Dialog>
+          <div className="flex items-center gap-4">
+            <Link href="/admin/login" className={cn("text-xs font-bold uppercase tracking-widest hover:text-secondary", textColor)}>
+              Admin
+            </Link>
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button className="bg-primary hover:bg-primary/90 text-white rounded-full px-8 shadow-lg font-bold gap-2">
+                  <CalendarCheck className="h-4 w-4" />
+                  Book Now
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[600px] rounded-[2rem] p-10 border-none shadow-2xl">
+                <DialogHeader className="mb-6">
+                  <DialogTitle className="text-3xl font-headline font-bold text-primary text-center">Reserve Your Sanctuary</DialogTitle>
+                  <p className="text-center text-muted-foreground">Select your preferred dates and guest count below.</p>
+                </DialogHeader>
+                <BookingForm layout="vertical" />
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         {/* Mobile Menu Toggle */}
@@ -131,7 +140,7 @@ const Navbar = () => {
               {link.name}
             </Link>
           ))}
-          <div className="pt-4">
+          <div className="pt-4 flex flex-col gap-6">
             <Dialog>
               <DialogTrigger asChild>
                 <Button className="w-full text-lg py-8 rounded-2xl font-bold" size="lg">
@@ -145,6 +154,13 @@ const Navbar = () => {
                 <BookingForm layout="vertical" />
               </DialogContent>
             </Dialog>
+            <Link 
+              href="/admin/login" 
+              onClick={() => setIsOpen(false)}
+              className="text-center text-sm font-bold uppercase tracking-widest text-primary/60 hover:text-primary"
+            >
+              Staff Portal Access
+            </Link>
           </div>
         </div>
       </div>
