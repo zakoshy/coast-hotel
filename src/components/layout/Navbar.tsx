@@ -89,9 +89,6 @@ const Navbar = () => {
           ))}
           
           <div className="flex items-center gap-4">
-            <Link href="/admin/login" className={cn("text-xs font-bold uppercase tracking-widest hover:text-secondary", textColor)}>
-              Admin
-            </Link>
             <Dialog>
               <DialogTrigger asChild>
                 <Button className="bg-primary hover:bg-primary/90 text-white rounded-full px-8 shadow-lg font-bold gap-2">

@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Facebook, Instagram, Twitter, MapPin, Phone, Mail, Palmtree } from 'lucide-react';
+import { Facebook, Instagram, Twitter, MapPin, Phone, Mail, Palmtree, ShieldCheck } from 'lucide-react';
 import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
 import { doc } from 'firebase/firestore';
 
@@ -111,9 +111,13 @@ const Footer = () => {
         {/* Bottom Bar */}
         <div className="mt-24 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6 text-[10px] font-bold uppercase tracking-widest text-slate-500">
           <p>© {new Date().getFullYear()} {hotelData?.name || "Coastal Sands Retreat"}. Crafted for Paradise.</p>
-          <div className="flex gap-8">
+          <div className="flex items-center gap-8">
             <Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link>
             <Link href="/terms" className="hover:text-white transition-colors">Terms & Conditions</Link>
+            <Link href="/admin/login" className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 rounded-lg hover:bg-white/10 hover:text-white transition-all text-secondary">
+              <ShieldCheck className="h-3 w-3" />
+              Staff Login
+            </Link>
           </div>
         </div>
       </div>
