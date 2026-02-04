@@ -1,3 +1,4 @@
+
 "use client";
 
 import React from 'react';
@@ -5,11 +6,11 @@ import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Waves, Coffee, Bath, Wind } from 'lucide-react';
+import { Waves, Coffee, Bath, Wind, Loader2 } from 'lucide-react';
 import BookingForm from '@/components/booking/BookingForm';
 import { cn } from '@/lib/utils';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { collection } from 'firebase/firestore';
 
 const PUBLIC_HOTEL_ID = 'coastal-sands-retreat';
 
@@ -17,13 +18,18 @@ export default function RoomsPage() {
   const db = useFirestore();
   
   // Real-time synchronization with the collection managed in Admin Dashboard
+  // We fetch the entire collection to ensure maximum reliability and real-time updates
   const roomsQuery = useMemoFirebase(() => {
-    const colRef = collection(db, 'hotels', PUBLIC_HOTEL_ID, 'rooms');
-    // For guests, we only show rooms that aren't marked as "out_of_order"
-    return query(colRef, where('status', '!=', 'out_of_order'));
+    return collection(db, 'hotels', PUBLIC_HOTEL_ID, 'rooms');
   }, [db]);
   
   const { data: rooms, isLoading } = useCollection(roomsQuery);
+
+  // Filter out rooms marked as "out_of_order" by the admin in the frontend
+  const availableRooms = React.useMemo(() => {
+    if (!rooms) return [];
+    return rooms.filter(room => room.status !== 'out_of_order');
+  }, [rooms]);
 
   return (
     <div className="bg-background min-h-screen">
@@ -38,18 +44,24 @@ export default function RoomsPage() {
       <section className="py-24 px-6 max-w-7xl mx-auto">
         <div className="space-y-32">
           {isLoading ? (
-            <div className="flex flex-col items-center justify-center py-20 gap-4">
+            <div className="flex flex-col items-center justify-center py-24 gap-4">
+              <Loader2 className="h-12 w-12 text-primary animate-spin" />
               <p className="text-muted-foreground italic text-xl animate-pulse">Fetching our finest collection...</p>
             </div>
-          ) : !rooms || rooms.length === 0 ? (
-            <div className="text-center py-20 space-y-6">
-              <p className="text-muted-foreground italic text-xl">No rooms currently available for online booking. Please check back soon or contact our concierge.</p>
-              <Button size="lg" className="rounded-2xl h-16 px-10 bg-primary font-bold">Contact Concierge Directly</Button>
+          ) : availableRooms.length === 0 ? (
+            <div className="text-center py-20 space-y-8 bg-white rounded-[3rem] shadow-xl border border-primary/5 p-12">
+              <div className="h-20 w-20 bg-primary/10 rounded-3xl flex items-center justify-center mx-auto">
+                <Waves className="h-10 w-10 text-primary" />
+              </div>
+              <div className="max-w-md mx-auto">
+                <p className="text-muted-foreground italic text-xl mb-6">No rooms currently available for online booking. Please check back soon or contact our concierge.</p>
+                <Button size="lg" className="rounded-2xl h-16 px-10 bg-primary font-bold shadow-xl shadow-primary/20">Contact Concierge Directly</Button>
+              </div>
             </div>
           ) : (
-            rooms.map((room, idx) => (
+            availableRooms.map((room, idx) => (
               <div key={room.id} className={cn("flex flex-col gap-16 items-center", idx % 2 === 1 ? "lg:flex-row-reverse" : "lg:flex-row")}>
-                <div className="w-full lg:w-3/5 relative aspect-[16/10] rounded-[3rem] overflow-hidden shadow-2xl group">
+                <div className="w-full lg:w-3/5 relative aspect-[16/10] rounded-[3rem] overflow-hidden shadow-2xl group border-4 border-white">
                   <Image
                     src={room.imageUrls?.[0] || `https://picsum.photos/seed/${room.id}/800/600`}
                     alt={room.roomType}
@@ -57,7 +69,7 @@ export default function RoomsPage() {
                     className="object-cover transition-transform duration-700 group-hover:scale-110"
                   />
                   <div className="absolute top-8 left-8">
-                    <Badge className="bg-white/95 text-primary font-bold text-2xl px-8 py-3 rounded-2xl shadow-xl backdrop-blur-md">
+                    <Badge className="bg-white/95 text-primary font-bold text-2xl px-8 py-3 rounded-2xl shadow-xl backdrop-blur-md border-none">
                       ${room.seasonalRate || room.price} <span className="text-xs opacity-70 font-normal ml-1">/ night</span>
                     </Badge>
                   </div>
@@ -77,7 +89,7 @@ export default function RoomsPage() {
                     ))}
                   </div>
                   <div className="flex flex-col sm:flex-row gap-4">
-                    <Button size="lg" className="px-10 h-16 text-lg rounded-2xl bg-primary hover:bg-primary/90 text-white font-bold" onClick={() => {
+                    <Button size="lg" className="px-10 h-16 text-lg rounded-2xl bg-primary hover:bg-primary/90 text-white font-bold shadow-xl shadow-primary/20" onClick={() => {
                        const bookingSection = document.getElementById('booking');
                        if (bookingSection) bookingSection.scrollIntoView({ behavior: 'smooth' });
                     }}>Reserve Now</Button>
