@@ -31,7 +31,8 @@ import {
   RefreshCw,
   Info,
   Settings2,
-  Wrench
+  Wrench,
+  Sparkles
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -189,6 +190,61 @@ export default function AdminDashboard() {
       };
       setDocumentNonBlocking(adminProfileRef, newProfile, { merge: true });
       toast({ title: "Profile Initialized", description: "You now have access to the management suite." });
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsInitializing(false);
+    }
+  };
+
+  const handleSeedRooms = async () => {
+    if (!db || !hotelId) return;
+    setIsInitializing(true);
+    const sampleRooms = [
+      {
+        id: 'ocean-deluxe-1',
+        hotelId,
+        roomNumber: '101',
+        roomType: 'Luxury Ocean Suite',
+        price: 250,
+        maxOccupancy: 2,
+        description: 'A breathtaking suite with floor-to-ceiling windows overlooking the Indian Ocean. Features Swahili-inspired decor and a private terrace.',
+        amenities: 'Private Balcony, King Bed, Mini Bar, Rainfall Shower',
+        status: 'active',
+        imageUrls: ['https://images.unsplash.com/photo-1759223198981-661cadbbff36?q=80&w=1080']
+      },
+      {
+        id: 'garden-villa-1',
+        hotelId,
+        roomNumber: '202',
+        roomType: 'Tropical Garden Villa',
+        price: 180,
+        maxOccupancy: 3,
+        description: 'Nestled among lush bougainvillea and palm trees, this villa offers ultimate privacy and a serene garden path to the beach.',
+        amenities: 'Garden View, Outdoor Shower, Coffee Station, Air Conditioning',
+        status: 'active',
+        imageUrls: ['https://images.unsplash.com/photo-1755206302429-d768832d0adf?q=80&w=1080']
+      },
+      {
+        id: 'family-suite-1',
+        hotelId,
+        roomNumber: '305',
+        roomType: 'Family Swahili Suite',
+        price: 320,
+        maxOccupancy: 4,
+        description: 'Spacious interconnecting rooms designed for families. Authentic Swahili carvings and modern amenities combine for the perfect group retreat.',
+        amenities: 'Interconnecting Rooms, Kitchenette, 2 Bathrooms, Kids Area',
+        status: 'active',
+        imageUrls: ['https://images.unsplash.com/photo-1649828537676-a11ed4527547?q=80&w=1080']
+      }
+    ];
+
+    try {
+      sampleRooms.forEach(room => {
+        const roomRef = doc(db, 'hotels', hotelId, 'rooms', room.id);
+        setDocumentNonBlocking(roomRef, room, { merge: true });
+      });
+      toast({ title: "Inventory Seeded", description: "Sample rooms are now available for booking." });
     } catch (error) {
       console.error(error);
     } finally {
@@ -560,15 +616,35 @@ export default function AdminDashboard() {
                   <h4 className="text-xl font-headline font-bold text-primary">Inventory & Rates</h4>
                   <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest mt-1">Manage standard and seasonal pricing</p>
                 </div>
-                <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10 flex gap-4 items-center">
-                  <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary"><Settings2 className="h-5 w-5" /></div>
-                  <div className="text-[10px] font-bold text-primary/80 leading-relaxed max-w-xs uppercase tracking-wider">
-                    Use this section to update base rates, set peak-season pricing, and mark rooms for maintenance.
+                <div className="flex gap-4 items-center">
+                  {(!rooms || rooms.length === 0) && (
+                    <Button 
+                      variant="outline" 
+                      onClick={handleSeedRooms} 
+                      disabled={isInitializing}
+                      className="rounded-xl font-bold h-12 border-dashed border-primary/30 text-primary bg-primary/5 hover:bg-primary/10 transition-all gap-2"
+                    >
+                      {isInitializing ? <Loader2Icon className="animate-spin h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
+                      Seed Sample Inventory
+                    </Button>
+                  )}
+                  <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10 flex gap-4 items-center">
+                    <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary"><Settings2 className="h-5 w-5" /></div>
+                    <div className="text-[10px] font-bold text-primary/80 leading-relaxed max-w-xs uppercase tracking-wider">
+                      Use this section to update base rates, set peak-season pricing, and mark rooms for maintenance.
+                    </div>
                   </div>
                 </div>
               </div>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {rooms?.map((room) => (
+                {rooms?.length === 0 ? (
+                  <div className="col-span-full py-20 text-center space-y-4">
+                    <p className="text-muted-foreground italic font-medium">Your catalog is currently empty.</p>
+                    <Button onClick={handleSeedRooms} disabled={isInitializing} className="rounded-xl h-12 px-8 font-bold">
+                      Initialize Room Catalog
+                    </Button>
+                  </div>
+                ) : rooms?.map((room) => (
                   <Card key={room.id} className="border-none shadow-xl rounded-[2.5rem] overflow-hidden bg-white group hover:-translate-y-1 transition-all">
                     <div className="h-48 relative">
                       <img src={room.imageUrls?.[0] || `https://picsum.photos/seed/${room.id}/600/400`} className="h-full w-full object-cover" alt={room.roomType} />
