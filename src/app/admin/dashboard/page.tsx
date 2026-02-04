@@ -21,14 +21,11 @@ import {
   Edit,
   MessageSquare,
   Menu as MenuIcon,
-  Tag,
-  Monitor,
   Plus,
   Trash2,
   UserPen,
   BarChart3,
   PieChart as PieChartIcon,
-  AlertCircle,
   Palmtree,
   Calendar as CalendarIcon
 } from 'lucide-react';
@@ -69,7 +66,6 @@ import {
   DropdownMenu, 
   DropdownMenuContent, 
   DropdownMenuItem, 
-  DropdownMenuLabel, 
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
@@ -105,6 +101,10 @@ const revenueChartConfig = {
 
 const occupancyChartConfig = {
   rate: { label: "Occupancy %", color: "hsl(var(--secondary))" },
+} satisfies ChartConfig;
+
+const sourceChartConfig = {
+  value: { label: "Bookings", color: "hsl(var(--primary))" },
 } satisfies ChartConfig;
 
 type ViewState = 'overview' | 'bookings' | 'rooms' | 'website' | 'reports' | 'profile';
@@ -418,7 +418,7 @@ export default function AdminDashboard() {
                 <Card className="lg:col-span-4 border-none shadow-2xl rounded-[2.5rem] p-10 bg-white">
                   <h4 className="text-xl font-headline font-bold text-primary mb-2">Guest Source</h4>
                   <div className="flex-1 flex flex-col items-center justify-center mt-10">
-                    <ResponsiveContainer width="100%" height={200}>
+                    <ChartContainer config={sourceChartConfig} className="h-[200px] w-full">
                       <PieChart>
                         <Pie data={sourceData} innerRadius={60} outerRadius={80} paddingAngle={10} dataKey="value">
                           {sourceData.map((entry, index) => (
@@ -427,7 +427,7 @@ export default function AdminDashboard() {
                         </Pie>
                         <ChartTooltip content={<ChartTooltipContent />} />
                       </PieChart>
-                    </ResponsiveContainer>
+                    </ChartContainer>
                     <div className="mt-8 space-y-3 w-full">
                       {sourceData.map((item, i) => (
                         <div key={i} className="flex justify-between items-center px-4 py-2 rounded-xl bg-slate-50">
