@@ -28,9 +28,17 @@ import {
   Tag,
   Hammer,
   ArrowRight,
-  UserPen
+  UserPen,
+  Monitor,
+  Image as ImageIcon,
+  Plus,
+  Trash2,
+  MapPin,
+  Phone,
+  Mail,
+  Info
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -84,6 +92,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
@@ -95,7 +104,7 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-type ViewState = 'overview' | 'bookings' | 'rooms' | 'profile';
+type ViewState = 'overview' | 'bookings' | 'rooms' | 'website' | 'profile';
 
 export default function AdminDashboard() {
   const { user, isUserLoading } = useUser();
@@ -246,6 +255,47 @@ export default function AdminDashboard() {
     toast({ title: "Profile Updated", description: "Your account details have been refreshed." });
   };
 
+  const handleUpdateHotelInfo = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!db || !hotelRef) return;
+
+    const formData = new FormData(e.currentTarget as HTMLFormElement);
+    const updateData = {
+      name: formData.get('name'),
+      description: formData.get('description'),
+      location: formData.get('location'),
+      contactNumber: formData.get('contactNumber'),
+      email: formData.get('email'),
+      policies: formData.get('policies')
+    };
+
+    updateDocumentNonBlocking(hotelRef, updateData);
+    toast({ title: "Website Updated", description: "General hotel information has been saved." });
+  };
+
+  const handleAddRoomImage = (roomId: string, url: string) => {
+    if (!db || !hotelId || !url) return;
+    const roomRef = doc(db, 'hotels', hotelId, 'rooms', roomId);
+    const room = rooms?.find(r => r.id === roomId);
+    if (!room) return;
+    
+    const newImages = [...(room.imageUrls || []), url];
+    updateDocumentNonBlocking(roomRef, { imageUrls: newImages });
+    toast({ title: "Image Added", description: "New photo added to room gallery." });
+  };
+
+  const handleRemoveRoomImage = (roomId: string, index: number) => {
+    if (!db || !hotelId) return;
+    const roomRef = doc(db, 'hotels', hotelId, 'rooms', roomId);
+    const room = rooms?.find(r => r.id === roomId);
+    if (!room) return;
+    
+    const newImages = [...(room.imageUrls || [])];
+    newImages.splice(index, 1);
+    updateDocumentNonBlocking(roomRef, { imageUrls: newImages });
+    toast({ title: "Image Removed", description: "Photo removed from room gallery." });
+  };
+
   if (isUserLoading || isAdminProfileLoading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-muted/10">
@@ -321,6 +371,16 @@ export default function AdminDashboard() {
         )}
       >
         <Hotel className="mr-3 h-5 w-5" /> Room &amp; Rates
+      </Button>
+      <Button 
+        variant="ghost" 
+        onClick={() => { setActiveView('website'); setIsMobileMenuOpen(false); }}
+        className={cn(
+          "w-full justify-start text-white/60 hover:bg-white/10 hover:text-white rounded-xl h-12 transition-all",
+          activeView === 'website' ? "bg-white/10 text-white" : ""
+        )}
+      >
+        <Monitor className="mr-3 h-5 w-5" /> Website Manager
       </Button>
       <Button 
         variant="ghost" 
@@ -400,7 +460,8 @@ export default function AdminDashboard() {
               <h1 className="text-3xl md:text-4xl font-headline font-bold text-[#0f172a]">
                 {activeView === 'overview' ? "Operations Overview" : 
                  activeView === 'bookings' ? "Booking Management" : 
-                 activeView === 'rooms' ? "Room &amp; Rate Manager" : "Account Profile"}
+                 activeView === 'rooms' ? "Room &amp; Rate Manager" : 
+                 activeView === 'website' ? "Website Content Manager" : "Account Profile"}
               </h1>
               <p className="text-muted-foreground mt-1 flex items-center gap-2 text-sm">
                 <Hotel className="h-4 w-4" /> {hotelData?.name || "Coastal Sands Retreat"} • {adminProfile?.role || "Manager"}
@@ -711,6 +772,145 @@ export default function AdminDashboard() {
                  <Clock className="h-3.5 w-3.5" /> Showing next 7 days availability. Real-time sync enabled with OTA channels.
                </p>
             </Card>
+          </div>
+        )}
+
+        {activeView === 'website' && (
+          <div className="max-w-5xl mx-auto space-y-10">
+            <Tabs defaultValue="general" className="w-full">
+              <TabsList className="bg-white p-2 rounded-2xl border border-slate-100 h-auto mb-10 shadow-sm flex flex-wrap">
+                <TabsTrigger value="general" className="rounded-xl h-12 px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white">
+                  General Information
+                </TabsTrigger>
+                <TabsTrigger value="media" className="rounded-xl h-12 px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white">
+                  Media Library
+                </TabsTrigger>
+                <TabsTrigger value="policies" className="rounded-xl h-12 px-8 font-bold data-[state=active]:bg-primary data-[state=active]:text-white">
+                  Hotel Policies
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="general" className="mt-0">
+                <Card className="border-none shadow-sm rounded-[2.5rem] bg-white p-10">
+                  <form onSubmit={handleUpdateHotelInfo} className="space-y-8">
+                    <div className="grid md:grid-cols-2 gap-8">
+                      <div className="space-y-2">
+                        <Label className="font-bold text-slate-500 uppercase text-[10px] tracking-widest">Hotel Name</Label>
+                        <Input name="name" defaultValue={hotelData?.name} className="rounded-xl h-14" required />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="font-bold text-slate-500 uppercase text-[10px] tracking-widest">Public Location</Label>
+                        <Input name="location" defaultValue={hotelData?.location} className="rounded-xl h-14" required />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="font-bold text-slate-500 uppercase text-[10px] tracking-widest">Public Description</Label>
+                      <Textarea name="description" defaultValue={hotelData?.description} className="rounded-xl min-h-[150px]" required />
+                    </div>
+                    <div className="grid md:grid-cols-2 gap-8">
+                      <div className="space-y-2">
+                        <Label className="font-bold text-slate-500 uppercase text-[10px] tracking-widest">Contact Phone</Label>
+                        <Input name="contactNumber" defaultValue={hotelData?.contactNumber} className="rounded-xl h-14" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label className="font-bold text-slate-500 uppercase text-[10px] tracking-widest">Inquiry Email</Label>
+                        <Input name="email" type="email" defaultValue={hotelData?.email} className="rounded-xl h-14" />
+                      </div>
+                    </div>
+                    <div className="pt-6 border-t border-slate-50">
+                      <Button type="submit" className="rounded-xl bg-primary text-white font-bold h-14 px-12 shadow-lg shadow-primary/20">
+                        Update Global Content
+                      </Button>
+                    </div>
+                  </form>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="media" className="mt-0">
+                <div className="space-y-8">
+                  {(rooms || []).map((room) => (
+                    <Card key={room.id} className="border-none shadow-sm rounded-[2.5rem] bg-white p-10">
+                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+                        <div>
+                          <h3 className="text-2xl font-headline font-bold text-slate-900">{room.roomType} Gallery</h3>
+                          <p className="text-sm text-muted-foreground">Manage photos for this room category</p>
+                        </div>
+                        <div className="flex gap-4 w-full md:w-auto">
+                          <Input 
+                            id={`img-url-${room.id}`} 
+                            placeholder="Paste image URL..." 
+                            className="rounded-xl h-12 flex-grow"
+                          />
+                          <Button 
+                            onClick={() => {
+                              const input = document.getElementById(`img-url-${room.id}`) as HTMLInputElement;
+                              handleAddRoomImage(room.id, input.value);
+                              input.value = '';
+                            }}
+                            className="rounded-xl bg-secondary h-12 px-6 font-bold"
+                          >
+                            <Plus className="h-4 w-4 mr-2" /> Add Photo
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
+                        {(room.imageUrls || []).map((url: string, index: number) => (
+                          <div key={index} className="relative aspect-square rounded-2xl overflow-hidden group border border-slate-100">
+                            <img src={url} className="w-full h-full object-cover" alt="Gallery item" />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <Button 
+                                variant="destructive" 
+                                size="icon" 
+                                className="rounded-full h-10 w-10"
+                                onClick={() => handleRemoveRoomImage(room.id, index)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                        {(!room.imageUrls || room.imageUrls.length === 0) && (
+                          <div className="col-span-full py-12 border-2 border-dashed border-slate-100 rounded-2xl flex flex-col items-center justify-center text-muted-foreground">
+                            <ImageIcon className="h-10 w-10 mb-2 opacity-20" />
+                            <p className="text-sm font-medium">No photos in this gallery</p>
+                          </div>
+                        )}
+                      </div>
+                    </Card>
+                  ))}
+                </div>
+              </TabsContent>
+
+              <TabsContent value="policies" className="mt-0">
+                <Card className="border-none shadow-sm rounded-[2.5rem] bg-white p-10">
+                  <form onSubmit={handleUpdateHotelInfo} className="space-y-8">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="p-3 bg-amber-50 rounded-2xl text-amber-600">
+                        <Info className="h-6 w-6" />
+                      </div>
+                      <div>
+                        <h3 className="text-2xl font-headline font-bold text-slate-900">Guest Policies</h3>
+                        <p className="text-sm text-muted-foreground">Define your hotel's operational rules</p>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="font-bold text-slate-500 uppercase text-[10px] tracking-widest">Master Policy & House Rules</Label>
+                      <Textarea 
+                        name="policies" 
+                        defaultValue={hotelData?.policies} 
+                        placeholder="e.g., Check-in at 2 PM, Check-out at 10 AM. No smoking in rooms. Cancellation requires 48h notice..."
+                        className="rounded-xl min-h-[300px]" 
+                      />
+                    </div>
+                    <div className="pt-6 border-t border-slate-50">
+                      <Button type="submit" className="rounded-xl bg-primary text-white font-bold h-14 px-12 shadow-lg shadow-primary/20">
+                        Save Policy Framework
+                      </Button>
+                    </div>
+                  </form>
+                </Card>
+              </TabsContent>
+            </Tabs>
           </div>
         )}
 
