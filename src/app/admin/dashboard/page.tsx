@@ -36,7 +36,10 @@ import {
   MapPin,
   Phone,
   Mail,
-  Info
+  Info,
+  BarChart3,
+  PieChart as PieChartIcon,
+  LineChart as LineChartIcon
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -53,7 +56,13 @@ import {
   YAxis, 
   CartesianGrid, 
   AreaChart,
-  Area
+  Area,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer
 } from 'recharts';
 import { useRouter } from 'next/navigation';
 import { getAuth, signOut } from 'firebase/auth';
@@ -97,14 +106,21 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 
-const chartConfig = {
+const revenueChartConfig = {
   revenue: {
     label: "Revenue",
     color: "hsl(var(--primary))",
   },
 } satisfies ChartConfig;
 
-type ViewState = 'overview' | 'bookings' | 'rooms' | 'website' | 'profile';
+const occupancyChartConfig = {
+  rate: {
+    label: "Occupancy %",
+    color: "hsl(var(--secondary))",
+  },
+} satisfies ChartConfig;
+
+type ViewState = 'overview' | 'bookings' | 'rooms' | 'website' | 'reports' | 'profile';
 
 export default function AdminDashboard() {
   const { user, isUserLoading } = useUser();
@@ -330,13 +346,21 @@ export default function AdminDashboard() {
   const activeBookingsCount = bookings?.filter(b => b.status === 'confirmed').length || 0;
   const occupancyRate = "78%";
 
+  // Mock data for reports
   const chartData = [
-    { name: 'Jan', revenue: 4000 },
-    { name: 'Feb', revenue: 3000 },
-    { name: 'Mar', revenue: 5000 },
-    { name: 'Apr', revenue: 4500 },
-    { name: 'May', revenue: 6000 },
-    { name: 'Jun', revenue: 5500 },
+    { name: 'Jan', revenue: 4200, rate: 65 },
+    { name: 'Feb', revenue: 3800, rate: 58 },
+    { name: 'Mar', revenue: 5200, rate: 72 },
+    { name: 'Apr', revenue: 4800, rate: 68 },
+    { name: 'May', revenue: 6400, rate: 82 },
+    { name: 'Jun', revenue: 5900, rate: 78 },
+  ];
+
+  const sourceData = [
+    { name: 'Direct Website', value: 45, color: 'hsl(var(--primary))' },
+    { name: 'Booking.com', value: 25, color: '#003580' },
+    { name: 'Expedia', value: 20, color: '#f8f9fa' },
+    { name: 'Airbnb', value: 10, color: '#FF5A5F' },
   ];
 
   const NavContent = () => (
@@ -382,6 +406,20 @@ export default function AdminDashboard() {
       >
         <Monitor className="mr-3 h-5 w-5" /> Website Manager
       </Button>
+
+      <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest mt-8 mb-4 ml-2">Business Intelligence</p>
+      <Button 
+        variant="ghost" 
+        onClick={() => { setActiveView('reports'); setIsMobileMenuOpen(false); }}
+        className={cn(
+          "w-full justify-start text-white/60 hover:bg-white/10 hover:text-white rounded-xl h-12 transition-all",
+          activeView === 'reports' ? "bg-white/10 text-white" : ""
+        )}
+      >
+        <BarChart3 className="mr-3 h-5 w-5" /> Analytics &amp; Reports
+      </Button>
+
+      <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest mt-8 mb-4 ml-2">Settings</p>
       <Button 
         variant="ghost" 
         onClick={() => { setActiveView('profile'); setIsMobileMenuOpen(false); }}
@@ -461,7 +499,8 @@ export default function AdminDashboard() {
                 {activeView === 'overview' ? "Operations Overview" : 
                  activeView === 'bookings' ? "Booking Management" : 
                  activeView === 'rooms' ? "Room &amp; Rate Manager" : 
-                 activeView === 'website' ? "Website Content Manager" : "Account Profile"}
+                 activeView === 'website' ? "Website Content Manager" : 
+                 activeView === 'reports' ? "Analytics &amp; Business Intelligence" : "Account Profile"}
               </h1>
               <p className="text-muted-foreground mt-1 flex items-center gap-2 text-sm">
                 <Hotel className="h-4 w-4" /> {hotelData?.name || "Coastal Sands Retreat"} • {adminProfile?.role || "Manager"}
@@ -514,7 +553,7 @@ export default function AdminDashboard() {
                   <CardTitle className="text-2xl font-headline font-bold text-slate-900">Revenue Performance</CardTitle>
                 </CardHeader>
                 <div className="h-[300px] w-full">
-                  <ChartContainer config={chartConfig}>
+                  <ChartContainer config={revenueChartConfig}>
                     <AreaChart data={chartData}>
                       <defs>
                         <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
@@ -768,9 +807,6 @@ export default function AdminDashboard() {
                     );
                   })}
                </div>
-               <p className="text-xs text-muted-foreground mt-6 italic flex items-center gap-2">
-                 <Clock className="h-3.5 w-3.5" /> Showing next 7 days availability. Real-time sync enabled with OTA channels.
-               </p>
             </Card>
           </div>
         )}
@@ -869,12 +905,6 @@ export default function AdminDashboard() {
                             </div>
                           </div>
                         ))}
-                        {(!room.imageUrls || room.imageUrls.length === 0) && (
-                          <div className="col-span-full py-12 border-2 border-dashed border-slate-100 rounded-2xl flex flex-col items-center justify-center text-muted-foreground">
-                            <ImageIcon className="h-10 w-10 mb-2 opacity-20" />
-                            <p className="text-sm font-medium">No photos in this gallery</p>
-                          </div>
-                        )}
                       </div>
                     </Card>
                   ))}
@@ -884,21 +914,12 @@ export default function AdminDashboard() {
               <TabsContent value="policies" className="mt-0">
                 <Card className="border-none shadow-sm rounded-[2.5rem] bg-white p-10">
                   <form onSubmit={handleUpdateHotelInfo} className="space-y-8">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="p-3 bg-amber-50 rounded-2xl text-amber-600">
-                        <Info className="h-6 w-6" />
-                      </div>
-                      <div>
-                        <h3 className="text-2xl font-headline font-bold text-slate-900">Guest Policies</h3>
-                        <p className="text-sm text-muted-foreground">Define your hotel's operational rules</p>
-                      </div>
-                    </div>
                     <div className="space-y-2">
-                      <Label className="font-bold text-slate-500 uppercase text-[10px] tracking-widest">Master Policy & House Rules</Label>
+                      <Label className="font-bold text-slate-500 uppercase text-[10px] tracking-widest">Master Policy &amp; House Rules</Label>
                       <Textarea 
                         name="policies" 
                         defaultValue={hotelData?.policies} 
-                        placeholder="e.g., Check-in at 2 PM, Check-out at 10 AM. No smoking in rooms. Cancellation requires 48h notice..."
+                        placeholder="e.g., Check-in at 2 PM, Check-out at 10 AM..."
                         className="rounded-xl min-h-[300px]" 
                       />
                     </div>
@@ -911,6 +932,121 @@ export default function AdminDashboard() {
                 </Card>
               </TabsContent>
             </Tabs>
+          </div>
+        )}
+
+        {activeView === 'reports' && (
+          <div className="space-y-10">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <Card className="border-none shadow-sm rounded-[2.5rem] bg-white p-10">
+                <CardHeader className="p-0 mb-8">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 bg-primary/10 rounded-2xl text-primary">
+                      <LineChartIcon className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-2xl font-headline font-bold text-slate-900">Revenue Analysis</CardTitle>
+                      <CardDescription>Direct booking totals over time</CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <div className="h-[300px] w-full">
+                  <ChartContainer config={revenueChartConfig}>
+                    <AreaChart data={chartData}>
+                      <defs>
+                        <linearGradient id="colorRevReports" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.2}/>
+                          <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} dy={10} />
+                      <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Area type="monotone" dataKey="revenue" stroke="hsl(var(--primary))" strokeWidth={3} fillOpacity={1} fill="url(#colorRevReports)" />
+                    </AreaChart>
+                  </ChartContainer>
+                </div>
+              </Card>
+
+              <Card className="border-none shadow-sm rounded-[2.5rem] bg-white p-10">
+                <CardHeader className="p-0 mb-8">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 bg-secondary/10 rounded-2xl text-secondary">
+                      <BarChart3 className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-2xl font-headline font-bold text-slate-900">Occupancy Report</CardTitle>
+                      <CardDescription>Website-driven occupancy percentage</CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <div className="h-[300px] w-full">
+                  <ChartContainer config={occupancyChartConfig}>
+                    <BarChart data={chartData}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                      <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} dy={10} />
+                      <YAxis axisLine={false} tickLine={false} tick={{fill: '#94a3b8', fontSize: 12}} domain={[0, 100]} />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Bar dataKey="rate" fill="hsl(var(--secondary))" radius={[8, 8, 0, 0]} />
+                    </BarChart>
+                  </ChartContainer>
+                </div>
+              </Card>
+
+              <Card className="border-none shadow-sm rounded-[2.5rem] bg-white p-10 lg:col-span-2">
+                <CardHeader className="p-0 mb-10">
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 bg-amber-100 rounded-2xl text-amber-600">
+                      <PieChartIcon className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-2xl font-headline font-bold text-slate-900">Guest Source Distribution</CardTitle>
+                      <CardDescription>Revenue breakdown by booking channel</CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <div className="grid md:grid-cols-2 gap-10 items-center">
+                  <div className="h-[350px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={sourceData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={80}
+                          outerRadius={120}
+                          paddingAngle={5}
+                          dataKey="value"
+                        >
+                          {sourceData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <ChartTooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="space-y-6">
+                    {sourceData.map((source, i) => (
+                      <div key={i} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl">
+                        <div className="flex items-center gap-4">
+                          <div className="h-4 w-4 rounded-full" style={{ backgroundColor: source.color }} />
+                          <span className="font-bold text-slate-700">{source.name}</span>
+                        </div>
+                        <span className="font-headline font-bold text-primary">{source.value}%</span>
+                      </div>
+                    ))}
+                    <div className="pt-6 border-t border-slate-100 text-center">
+                      <p className="text-sm text-muted-foreground">
+                        <TrendingUp className="inline-block h-4 w-4 mr-1 text-emerald-500" />
+                        Direct Website bookings are up <strong>15%</strong> compared to last quarter.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </div>
           </div>
         )}
 
@@ -1068,13 +1204,6 @@ export default function AdminDashboard() {
                     {(rooms || []).map(r => (
                       <SelectItem key={r.id} value={r.roomType}>{r.roomType}</SelectItem>
                     ))}
-                    {!rooms?.length && (
-                      <>
-                        <SelectItem value="Ocean Deluxe Room">Ocean Deluxe Room</SelectItem>
-                        <SelectItem value="Junior Garden Suite">Junior Garden Suite</SelectItem>
-                        <SelectItem value="Swahili Garden Villa">Swahili Garden Villa</SelectItem>
-                      </>
-                    )}
                   </SelectContent>
                 </Select>
               </div>
