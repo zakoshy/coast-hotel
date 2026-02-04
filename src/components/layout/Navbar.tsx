@@ -1,10 +1,9 @@
-
 "use client";
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, CalendarCheck, ShieldCheck } from 'lucide-react';
+import { Menu, X, CalendarCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import {
@@ -15,6 +14,10 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import BookingForm from '@/components/booking/BookingForm';
+import { useDoc, useFirestore, useMemoFirebase } from '@/firebase';
+import { doc } from 'firebase/firestore';
+
+const PUBLIC_HOTEL_ID = 'coastal-sands-retreat';
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -22,6 +25,10 @@ const Navbar = () => {
   const pathname = usePathname();
   const isHomePage = pathname === '/';
   const isAdminPage = pathname?.startsWith('/admin');
+  const db = useFirestore();
+
+  const hotelRef = useMemoFirebase(() => doc(db, 'hotels', PUBLIC_HOTEL_ID), [db]);
+  const { data: hotelData } = useDoc(hotelRef);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -31,7 +38,6 @@ const Navbar = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Don't show public navbar on admin pages
   if (isAdminPage) return null;
 
   const navLinks = [
@@ -57,17 +63,16 @@ const Navbar = () => {
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <Link href="/" className="flex flex-col">
           <span className={cn(
-            "text-2xl font-headline font-bold leading-tight tracking-tight",
+            "text-2xl font-headline font-bold leading-tight tracking-tight uppercase",
             brandColor
           )}>
-            COASTAL SANDS
+            {hotelData?.name || "COASTAL SANDS"}
           </span>
           <span className="text-[10px] tracking-[0.3em] uppercase font-bold text-secondary">
-            Diani • Kenya
+            {hotelData?.location?.split(',')[0] || "Diani"} • Kenya
           </span>
         </Link>
 
-        {/* Desktop Menu */}
         <div className="hidden md:flex items-center space-x-8">
           {navLinks.map((link) => (
             <Link
@@ -105,12 +110,7 @@ const Navbar = () => {
           </div>
         </div>
 
-        {/* Mobile Menu Toggle */}
-        <button
-          className="md:hidden"
-          onClick={() => setIsOpen(!isOpen)}
-          aria-label="Toggle navigation"
-        >
+        <button className="md:hidden" onClick={() => setIsOpen(!isOpen)}>
           {isOpen ? (
             <X className={cn("h-8 w-8", isSolid ? "text-primary" : "text-white")} />
           ) : (
@@ -119,48 +119,16 @@ const Navbar = () => {
         </button>
       </div>
 
-      {/* Mobile Menu Overlay */}
-      <div
-        className={cn(
-          "fixed inset-0 top-[70px] bg-background z-40 transition-transform duration-500 md:hidden",
-          isOpen ? "translate-x-0" : "translate-x-full"
-        )}
-      >
+      <div className={cn("fixed inset-0 top-[70px] bg-background z-40 transition-transform duration-500 md:hidden", isOpen ? "translate-x-0" : "translate-x-full")}>
         <div className="flex flex-col p-10 space-y-8 h-full bg-white">
           {navLinks.map((link) => (
-            <Link
-              key={link.name}
-              href={link.href}
-              onClick={() => setIsOpen(false)}
-              className={cn(
-                "text-3xl font-headline font-bold hover:text-primary transition-colors border-b border-muted pb-4",
-                pathname === link.href ? "text-primary" : "text-foreground"
-              )}
-            >
+            <Link key={link.name} href={link.href} onClick={() => setIsOpen(false)} className={cn("text-3xl font-headline font-bold border-b border-muted pb-4", pathname === link.href ? "text-primary" : "text-foreground")}>
               {link.name}
             </Link>
           ))}
           <div className="pt-4 flex flex-col gap-6">
-            <Dialog>
-              <DialogTrigger asChild>
-                <Button className="w-full text-lg py-8 rounded-2xl font-bold" size="lg">
-                  Reserve Your Oasis
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="w-[95%] rounded-3xl p-6 border-none">
-                <DialogHeader className="mb-4">
-                  <DialogTitle className="text-2xl font-headline font-bold text-primary">Quick Booking</DialogTitle>
-                </DialogHeader>
-                <BookingForm layout="vertical" />
-              </DialogContent>
-            </Dialog>
-            <Link 
-              href="/admin/login" 
-              onClick={() => setIsOpen(false)}
-              className="text-center text-sm font-bold uppercase tracking-widest text-primary/60 hover:text-primary"
-            >
-              Staff Portal Access
-            </Link>
+            <Button className="w-full text-lg py-8 rounded-2xl font-bold" size="lg">Reserve Your Oasis</Button>
+            <Link href="/admin/login" onClick={() => setIsOpen(false)} className="text-center text-sm font-bold uppercase tracking-widest text-primary/60 hover:text-primary">Staff Portal Access</Link>
           </div>
         </div>
       </div>
