@@ -16,9 +16,10 @@ const PUBLIC_HOTEL_ID = 'coastal-sands-retreat';
 export default function RoomsPage() {
   const db = useFirestore();
   
-  // Filter out rooms that are marked as out_of_order for public view
+  // Real-time synchronization with the collection managed in Admin Dashboard
   const roomsQuery = useMemoFirebase(() => {
     const colRef = collection(db, 'hotels', PUBLIC_HOTEL_ID, 'rooms');
+    // For guests, we only show rooms that aren't marked as "out_of_order"
     return query(colRef, where('status', '!=', 'out_of_order'));
   }, [db]);
   
@@ -37,14 +38,16 @@ export default function RoomsPage() {
       <section className="py-24 px-6 max-w-7xl mx-auto">
         <div className="space-y-32">
           {isLoading ? (
-            <p className="text-center text-muted-foreground">Fetching our finest collection...</p>
-          ) : rooms?.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-20 gap-4">
+              <p className="text-muted-foreground italic text-xl animate-pulse">Fetching our finest collection...</p>
+            </div>
+          ) : !rooms || rooms.length === 0 ? (
             <div className="text-center py-20 space-y-6">
-              <p className="text-muted-foreground italic text-xl">No rooms currently available for booking online.</p>
+              <p className="text-muted-foreground italic text-xl">No rooms currently available for online booking. Please check back soon or contact our concierge.</p>
               <Button size="lg" className="rounded-2xl h-16 px-10 bg-primary font-bold">Contact Concierge Directly</Button>
             </div>
           ) : (
-            rooms?.map((room, idx) => (
+            rooms.map((room, idx) => (
               <div key={room.id} className={cn("flex flex-col gap-16 items-center", idx % 2 === 1 ? "lg:flex-row-reverse" : "lg:flex-row")}>
                 <div className="w-full lg:w-3/5 relative aspect-[16/10] rounded-[3rem] overflow-hidden shadow-2xl group">
                   <Image

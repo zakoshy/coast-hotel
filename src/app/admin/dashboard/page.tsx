@@ -143,15 +143,14 @@ export default function AdminDashboard() {
   const adminProfileRef = useMemoFirebase(() => user ? doc(db, 'admin_users', user.uid) : null, [db, user]);
   const { data: adminProfile, isLoading: isAdminProfileLoading } = useDoc(adminProfileRef);
 
-  const hotelId = adminProfile?.hotelId;
-  const displayHotelId = hotelId || PUBLIC_HOTEL_ID;
-  const hotelRef = useMemoFirebase(() => doc(db, 'hotels', displayHotelId), [db, displayHotelId]);
+  // hotelId from profile, or fallback to public one if seeding/initializing
+  const hotelId = adminProfile?.hotelId || PUBLIC_HOTEL_ID;
+  const hotelRef = useMemoFirebase(() => doc(db, 'hotels', hotelId), [db, hotelId]);
   const { data: hotelData } = useDoc(hotelRef);
 
   const pagesCollectionRef = useMemoFirebase(() => hotelId ? collection(db, 'hotels', hotelId, 'pages') : null, [db, hotelId]);
   const { data: pageContents } = useCollection(pagesCollectionRef);
 
-  // Safety: Don't fetch sensitive data until profile is confirmed
   const bookingsQuery = useMemoFirebase(() => hotelId ? collection(db, 'hotels', hotelId, 'bookings') : null, [db, hotelId]);
   const { data: bookings } = useCollection(bookingsQuery);
 
@@ -189,7 +188,7 @@ export default function AdminDashboard() {
         role: 'Super Admin'
       };
       setDocumentNonBlocking(adminProfileRef, newProfile, { merge: true });
-      toast({ title: "Profile Initialized", description: "You now have access to the management suite." });
+      toast({ title: "Profile Initialized", description: "Your admin account is now synchronized with Coastal Sands Retreat." });
     } catch (error) {
       console.error(error);
     } finally {
@@ -244,7 +243,7 @@ export default function AdminDashboard() {
         const roomRef = doc(db, 'hotels', hotelId, 'rooms', room.id);
         setDocumentNonBlocking(roomRef, room, { merge: true });
       });
-      toast({ title: "Inventory Seeded", description: "Sample rooms are now available for booking." });
+      toast({ title: "Inventory Seeded", description: "The rooms are now live on the official website." });
     } catch (error) {
       console.error(error);
     } finally {
@@ -269,10 +268,9 @@ export default function AdminDashboard() {
       location: formData.get('location'),
       contactNumber: formData.get('contactNumber'),
       email: formData.get('email'),
-      policies: formData.get('policies'),
     };
     updateDocumentNonBlocking(hotelRef, updateData);
-    toast({ title: "Hotel Profile Updated", description: "Live information synchronized." });
+    toast({ title: "Hotel Profile Updated", description: "Information updated across the website." });
   };
 
   const handleUpdateRoomRate = async (e: React.FormEvent) => {
@@ -287,7 +285,7 @@ export default function AdminDashboard() {
     };
     updateDocumentNonBlocking(roomRef, updateData);
     setIsRoomModalOpen(false);
-    toast({ title: "Room Updated", description: "Inventory and rates have been synchronized." });
+    toast({ title: "Room Updated", description: "Changes are now live for guests." });
   };
 
   if (isUserLoading || isAdminProfileLoading) {
