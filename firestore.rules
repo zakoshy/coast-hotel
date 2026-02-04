@@ -9,7 +9,7 @@ service cloud.firestore {
      * Authentication UID and a specific 'Hotel' document.
      *
      * PUBLIC ACCESS:
-     * - Guests can read hotel metadata and room details to facilitate bookings.
+     * - Guests can read hotel metadata, room details, and dynamic page content.
      */
 
     // --- GLOBAL HELPER FUNCTIONS ---
@@ -47,6 +47,11 @@ service cloud.firestore {
       allow create: if isSignedIn(); 
       allow update: if isExistingHotelAdmin(hotelId);
       allow delete: if isExistingHotelAdmin(hotelId);
+
+      match /pages/{pageId} {
+        allow get, list: if true; // Public can see dynamic page content (Home, Dining, etc.)
+        allow create, update, delete: if isAdminForHotel(hotelId);
+      }
 
       match /rooms/{roomId} {
         allow get, list: if true; // Public can see room details
