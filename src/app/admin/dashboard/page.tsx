@@ -331,6 +331,9 @@ export default function AdminDashboard() {
                 <Button variant="outline" size="icon" className="lg:hidden rounded-xl border-slate-200"><MenuIcon className="h-5 w-5" /></Button>
               </SheetTrigger>
               <SheetContent side="left" className="bg-[#0f172a] text-white p-8 w-72 flex flex-col border-none">
+                <SheetHeader className="text-left mb-8">
+                  <SheetTitle className="text-white font-headline text-2xl">Menu</SheetTitle>
+                </SheetHeader>
                 <NavContent />
                 <Button variant="outline" className="mt-auto border-white/10 text-white font-bold" onClick={handleLogout}>
                   <LogOut className="mr-3 h-4 w-4" /> Sign Out
