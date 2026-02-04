@@ -111,7 +111,7 @@ const Footer = () => {
             <Link href="/terms" className="hover:text-white transition-colors">Terms & Conditions</Link>
             <Link href="/admin/login" className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 rounded-lg hover:bg-white/10 hover:text-white transition-all text-secondary">
               <ShieldCheck className="h-3 w-3" />
-              Staff Login
+              Admin Login
             </Link>
           </div>
         </div>
