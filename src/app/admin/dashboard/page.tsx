@@ -25,7 +25,8 @@ import {
   XCircle,
   Clock,
   Edit,
-  FileText
+  FileText,
+  MessageSquare
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -75,6 +76,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 const chartConfig = {
   revenue: {
@@ -132,8 +134,9 @@ export default function AdminDashboard() {
     if (!bookings) return [];
     return bookings.filter(b => {
       const matchesStatus = statusFilter === 'all' || b.status === statusFilter;
-      const matchesSearch = b.guestName.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                            b.guestEmail.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch = 
+        b.guestName.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        b.guestEmail.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesStatus && matchesSearch;
     });
   }, [bookings, statusFilter, searchQuery]);
@@ -227,7 +230,7 @@ export default function AdminDashboard() {
             variant="ghost" 
             onClick={() => setActiveView('overview')}
             className={cn(
-              "w-full justify-start text-white hover:bg-white/10 rounded-xl h-12 font-bold",
+              "w-full justify-start text-white hover:bg-white/10 rounded-xl h-12 font-bold transition-all",
               activeView === 'overview' ? "bg-white/10" : "bg-transparent"
             )}
           >
@@ -237,7 +240,7 @@ export default function AdminDashboard() {
             variant="ghost" 
             onClick={() => setActiveView('bookings')}
             className={cn(
-              "w-full justify-start text-white/60 hover:bg-white/10 hover:text-white rounded-xl h-12",
+              "w-full justify-start text-white/60 hover:bg-white/10 hover:text-white rounded-xl h-12 transition-all",
               activeView === 'bookings' ? "bg-white/10 text-white" : ""
             )}
           >
@@ -297,7 +300,7 @@ export default function AdminDashboard() {
             <div className="relative flex-grow md:flex-grow-0">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <input 
-                placeholder="Search guests or dates..." 
+                placeholder="Search guests or emails..." 
                 className="pl-12 h-12 w-full md:w-72 rounded-2xl border-none bg-white shadow-sm focus:ring-2 focus:ring-primary/20 transition-all"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -314,7 +317,7 @@ export default function AdminDashboard() {
                 { label: "Total Revenue", val: `$${totalRevenue.toLocaleString()}`, icon: <DollarSign />, trend: "+12.5%", color: "bg-emerald-500" },
                 { label: "Confirmed Stays", val: activeBookingsCount.toString(), icon: <Calendar />, trend: "+5.2%", color: "bg-blue-500" },
                 { label: "Occupancy Rate", val: occupancyRate, icon: <Hotel />, trend: "+2.1%", color: "bg-secondary" },
-                { label: "Avg. Guest Rating", val: "4.9/5", icon: <UserIcon />, trend: "+0.3", color: "bg-amber-500" }
+                { label: "Avg. Daily Rate", val: "$310", icon: <TrendingUp />, trend: "+1.4%", color: "bg-amber-500" }
               ].map((kpi, i) => (
                 <Card key={i} className="border-none shadow-sm rounded-[2rem] overflow-hidden bg-white hover:shadow-md transition-all duration-300">
                   <CardContent className="p-8">
@@ -358,7 +361,7 @@ export default function AdminDashboard() {
               </Card>
 
               <Card className="lg:col-span-1 border-none shadow-sm rounded-[2.5rem] bg-white p-10">
-                <CardTitle className="text-2xl font-headline font-bold text-slate-900 mb-8">Recent Activity</CardTitle>
+                <CardTitle className="text-2xl font-headline font-bold text-slate-900 mb-8">Recent Bookings</CardTitle>
                 <div className="space-y-6">
                   {(bookings?.slice(0, 5) || []).map((b, i) => (
                     <div key={i} className="flex items-center justify-between pb-6 border-b border-slate-50 last:border-none">
@@ -371,7 +374,11 @@ export default function AdminDashboard() {
                           <p className="text-xs text-muted-foreground">{b.roomType}</p>
                         </div>
                       </div>
-                      <Badge className={b.status === 'confirmed' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}>
+                      <Badge className={cn(
+                        "font-bold",
+                        b.status === 'confirmed' ? 'bg-emerald-50 text-emerald-600' : 
+                        b.status === 'pending' ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'
+                      )}>
                         {b.status}
                       </Badge>
                     </div>
@@ -394,7 +401,7 @@ export default function AdminDashboard() {
                         variant={statusFilter === status ? 'default' : 'ghost'}
                         size="sm"
                         onClick={() => setStatusFilter(status)}
-                        className={cn("rounded-lg font-bold capitalize", statusFilter === status ? "bg-primary text-white" : "text-muted-foreground")}
+                        className={cn("rounded-lg font-bold capitalize transition-all", statusFilter === status ? "bg-primary text-white" : "text-muted-foreground")}
                       >
                         {status}
                       </Button>
@@ -402,7 +409,7 @@ export default function AdminDashboard() {
                   </div>
                 </div>
                 <Button variant="outline" className="rounded-xl gap-2 font-bold">
-                  <Filter className="h-4 w-4" /> Advanced Filters
+                  <Filter className="h-4 w-4" /> Filter by Date
                 </Button>
               </div>
 
@@ -410,10 +417,10 @@ export default function AdminDashboard() {
                 <Table>
                   <TableHeader className="bg-slate-50/50">
                     <TableRow className="border-none">
-                      <TableHead className="font-bold">Guest Details</TableHead>
+                      <TableHead className="font-bold">Guest & Requests</TableHead>
                       <TableHead className="font-bold">Stay Dates</TableHead>
-                      <TableHead className="font-bold">Room & Guests</TableHead>
-                      <TableHead className="font-bold">Payment</TableHead>
+                      <TableHead className="font-bold">Room Detail</TableHead>
+                      <TableHead className="font-bold">Financials</TableHead>
                       <TableHead className="font-bold">Status</TableHead>
                       <TableHead className="font-bold text-right">Actions</TableHead>
                     </TableRow>
@@ -422,7 +429,7 @@ export default function AdminDashboard() {
                     {filteredBookings.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={6} className="text-center py-20 text-muted-foreground">
-                          No bookings found matching your criteria.
+                          No reservations found in the current log.
                         </TableCell>
                       </TableRow>
                     ) : (
@@ -435,7 +442,12 @@ export default function AdminDashboard() {
                               </Avatar>
                               <div>
                                 <p className="font-bold text-slate-900 leading-none mb-1">{b.guestName}</p>
-                                <p className="text-[10px] text-muted-foreground">{b.guestEmail}</p>
+                                <p className="text-[10px] text-muted-foreground mb-2">{b.guestEmail}</p>
+                                {b.specialRequests && (
+                                  <div className="flex items-center gap-1.5 text-[10px] text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md w-fit font-medium">
+                                    <MessageSquare className="h-3 w-3" /> Request: {b.specialRequests}
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </TableCell>
@@ -481,13 +493,13 @@ export default function AdminDashboard() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end" className="w-56 rounded-xl border-slate-100 shadow-xl p-2">
-                                <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">Actions</DropdownMenuLabel>
+                                <DropdownMenuLabel className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">Management</DropdownMenuLabel>
                                 {b.status !== 'confirmed' && (
                                   <DropdownMenuItem 
                                     onClick={() => handleUpdateBookingStatus(b.id, 'confirmed')}
                                     className="rounded-lg text-emerald-600 font-bold focus:bg-emerald-50 focus:text-emerald-700"
                                   >
-                                    <CheckCircle2 className="mr-2 h-4 w-4" /> Confirm Booking
+                                    <CheckCircle2 className="mr-2 h-4 w-4" /> Confirm & Notify
                                   </DropdownMenuItem>
                                 )}
                                 {b.status !== 'cancelled' && (
@@ -495,7 +507,7 @@ export default function AdminDashboard() {
                                     onClick={() => handleUpdateBookingStatus(b.id, 'cancelled')}
                                     className="rounded-lg text-red-600 font-bold focus:bg-red-50 focus:text-red-700"
                                   >
-                                    <XCircle className="mr-2 h-4 w-4" /> Cancel Booking
+                                    <XCircle className="mr-2 h-4 w-4" /> Cancel & Refund
                                   </DropdownMenuItem>
                                 )}
                                 <DropdownMenuSeparator />
@@ -506,10 +518,10 @@ export default function AdminDashboard() {
                                   }}
                                   className="rounded-lg font-bold"
                                 >
-                                  <Edit className="mr-2 h-4 w-4" /> Edit Details
+                                  <Edit className="mr-2 h-4 w-4" /> Modify Booking
                                 </DropdownMenuItem>
                                 <DropdownMenuItem className="rounded-lg font-bold">
-                                  <FileText className="mr-2 h-4 w-4" /> Internal Notes
+                                  <FileText className="mr-2 h-4 w-4" /> Add Private Note
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -528,8 +540,8 @@ export default function AdminDashboard() {
         <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
           <DialogContent className="sm:max-w-[500px] rounded-[2.5rem] border-none shadow-2xl p-10">
             <DialogHeader className="mb-6">
-              <DialogTitle className="text-3xl font-headline font-bold text-primary">Edit Booking</DialogTitle>
-              <DialogDescription className="text-muted-foreground">Modify details for {selectedBooking?.guestName}</DialogDescription>
+              <DialogTitle className="text-3xl font-headline font-bold text-primary">Modify Reservation</DialogTitle>
+              <DialogDescription className="text-muted-foreground">Adjust stay details for {selectedBooking?.guestName}</DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSaveBookingEdit} className="space-y-6">
               <div className="grid grid-cols-2 gap-4">
@@ -543,39 +555,40 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="roomType" className="font-bold text-xs uppercase tracking-widest text-slate-500">Room Type</Label>
+                <Label htmlFor="roomType" className="font-bold text-xs uppercase tracking-widest text-slate-500">Room Category</Label>
                 <Select name="roomType" defaultValue={selectedBooking?.roomType}>
                   <SelectTrigger className="rounded-xl h-12">
                     <SelectValue placeholder="Select Room" />
                   </SelectTrigger>
                   <SelectContent className="rounded-xl">
-                    <SelectItem value="Ocean Deluxe">Ocean Deluxe</SelectItem>
-                    <SelectItem value="Garden Villa">Garden Villa</SelectItem>
-                    <SelectItem value="Grand Suite">Grand Suite</SelectItem>
-                    <SelectItem value="Junior Suite">Junior Suite</SelectItem>
+                    <SelectItem value="Ocean Deluxe Room">Ocean Deluxe Room</SelectItem>
+                    <SelectItem value="Junior Garden Suite">Junior Garden Suite</SelectItem>
+                    <SelectItem value="Swahili Garden Villa">Swahili Garden Villa</SelectItem>
+                    <SelectItem value="Family Ocean Suite">Family Ocean Suite</SelectItem>
+                    <SelectItem value="Grand Presidential Suite">Grand Presidential Suite</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="paymentStatus" className="font-bold text-xs uppercase tracking-widest text-slate-500">Payment Status</Label>
+                <Label htmlFor="paymentStatus" className="font-bold text-xs uppercase tracking-widest text-slate-500">Settlement Status</Label>
                 <Select name="paymentStatus" defaultValue={selectedBooking?.paymentStatus || 'pending'}>
                   <SelectTrigger className="rounded-xl h-12">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent className="rounded-xl">
-                    <SelectItem value="paid">Paid</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
-                    <SelectItem value="refunded">Refunded</SelectItem>
+                    <SelectItem value="paid">Paid (Settled)</SelectItem>
+                    <SelectItem value="pending">Pending Payment</SelectItem>
+                    <SelectItem value="refunded">Refunded / Reversal</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="notes" className="font-bold text-xs uppercase tracking-widest text-slate-500">Internal Notes</Label>
-                <Textarea id="notes" name="notes" placeholder="Add internal hotel notes here..." defaultValue={selectedBooking?.internalNotes} className="rounded-xl min-h-[100px]" />
+                <Label htmlFor="notes" className="font-bold text-xs uppercase tracking-widest text-slate-500">Internal Management Notes</Label>
+                <Textarea id="notes" name="notes" placeholder="e.g., Anniversary guest, late check-out requested..." defaultValue={selectedBooking?.internalNotes} className="rounded-xl min-h-[100px]" />
               </div>
               <DialogFooter className="pt-6">
-                <Button type="button" variant="ghost" onClick={() => setIsEditModalOpen(false)} className="rounded-xl">Cancel</Button>
-                <Button type="submit" className="rounded-xl bg-primary text-white font-bold px-8">Save Changes</Button>
+                <Button type="button" variant="ghost" onClick={() => setIsEditModalOpen(false)} className="rounded-xl">Discard</Button>
+                <Button type="submit" className="rounded-xl bg-primary text-white font-bold px-8">Update Records</Button>
               </DialogFooter>
             </form>
           </DialogContent>
