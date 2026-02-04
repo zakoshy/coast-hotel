@@ -32,7 +32,9 @@ import {
   Info,
   Settings2,
   Wrench,
-  Sparkles
+  Sparkles,
+  Image as ImageIcon,
+  Check
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -98,9 +100,11 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 const PUBLIC_HOTEL_ID = 'coastal-sands-retreat';
 
@@ -134,6 +138,9 @@ export default function AdminDashboard() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isInitializing, setIsInitializing] = useState(false);
+  
+  // New state for room creation image selection
+  const [selectedImageUrl, setSelectedImageUrl] = useState<string>(PlaceHolderImages[0]?.imageUrl || '');
 
   useEffect(() => {
     if (!isUserLoading && !user) {
@@ -216,7 +223,7 @@ export default function AdminDashboard() {
       description: formData.get('description'),
       amenities: formData.get('amenities'),
       status: 'active',
-      imageUrls: [formData.get('imageUrl') || `https://picsum.photos/seed/${roomId}/800/600`]
+      imageUrls: [selectedImageUrl || `https://picsum.photos/seed/${roomId}/800/600`]
     };
 
     const roomRef = doc(db, 'hotels', hotelId, 'rooms', roomId);
@@ -913,12 +920,12 @@ export default function AdminDashboard() {
       </Dialog>
 
       <Dialog open={isCreateRoomModalOpen} onOpenChange={setIsCreateRoomModalOpen}>
-        <DialogContent className="rounded-[2.5rem] border-none shadow-2xl p-10 max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="rounded-[2.5rem] border-none shadow-2xl p-10 max-w-2xl max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="text-2xl font-headline font-bold text-primary">Add New Room</DialogTitle>
             <DialogDescription>Manually add a new room to the hotel catalog.</DialogDescription>
           </DialogHeader>
-          <form onSubmit={handleCreateRoom} className="space-y-6 mt-6 pb-4">
+          <form onSubmit={handleCreateRoom} className="space-y-6 mt-6 pb-4 overflow-y-auto pr-2">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="font-bold text-primary">Room Number</Label>
@@ -945,11 +952,44 @@ export default function AdminDashboard() {
               <Label className="font-bold text-primary">Description</Label>
               <Textarea name="description" placeholder="Describe the room features..." className="rounded-xl bg-slate-50 min-h-[100px]" required />
             </div>
-            <div className="space-y-2">
-              <Label className="font-bold text-primary">Cover Image URL (Optional)</Label>
-              <Input name="imageUrl" placeholder="https://..." className="h-12 rounded-xl bg-slate-50" />
+            
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label className="font-bold text-primary flex items-center gap-2">
+                  <ImageIcon className="h-4 w-4" /> Select Cover Image from Library
+                </Label>
+                <Badge variant="outline" className="font-bold text-[10px] tracking-widest uppercase">Media Manager</Badge>
+              </div>
+              <ScrollArea className="h-48 w-full rounded-2xl border border-slate-100 p-4 bg-slate-50/50">
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-4">
+                  {PlaceHolderImages.map((img) => (
+                    <div 
+                      key={img.id} 
+                      onClick={() => setSelectedImageUrl(img.imageUrl)}
+                      className={cn(
+                        "relative aspect-square rounded-xl overflow-hidden cursor-pointer transition-all border-4",
+                        selectedImageUrl === img.imageUrl ? "border-primary scale-95 shadow-lg" : "border-transparent hover:border-primary/30"
+                      )}
+                    >
+                      <img src={img.imageUrl} alt={img.description} className="h-full w-full object-cover" />
+                      {selectedImageUrl === img.imageUrl && (
+                        <div className="absolute inset-0 bg-primary/20 flex items-center justify-center">
+                          <Check className="h-8 w-8 text-white drop-shadow-md" />
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+              {selectedImageUrl && (
+                <div className="flex items-center gap-3 p-3 bg-primary/5 rounded-xl border border-primary/10">
+                  <ImageIcon className="h-4 w-4 text-primary shrink-0" />
+                  <p className="text-[10px] font-bold text-primary/80 uppercase truncate tracking-wider">{selectedImageUrl}</p>
+                </div>
+              )}
             </div>
-            <Button type="submit" className="w-full h-14 rounded-xl font-bold text-lg shadow-xl shadow-primary/20 bg-primary text-white">
+
+            <Button type="submit" className="w-full h-14 rounded-xl font-bold text-lg shadow-xl shadow-primary/20 bg-primary text-white mt-4">
               Launch Room to Website
             </Button>
           </form>
