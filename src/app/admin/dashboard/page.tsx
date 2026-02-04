@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useUser, useFirestore, useCollection, useDoc, useMemoFirebase, updateDocumentNonBlocking } from '@/firebase';
 import { collection, doc } from 'firebase/firestore';
 import { 
@@ -91,7 +91,7 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-type ViewState = 'overview' | 'bookings' | 'profile' | 'rooms' | 'guests';
+type ViewState = 'overview' | 'bookings' | 'profile';
 
 export default function AdminDashboard() {
   const { user, isUserLoading } = useUser();
@@ -106,6 +106,13 @@ export default function AdminDashboard() {
   // Filters
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+
+  // Handle Redirection - Correctly wrapped in useEffect
+  useEffect(() => {
+    if (!isUserLoading && !user) {
+      router.push('/admin/login');
+    }
+  }, [user, isUserLoading, router]);
 
   // Fetch Admin User Profile to get hotelId
   const adminProfileRef = useMemoFirebase(() => {
@@ -188,8 +195,7 @@ export default function AdminDashboard() {
   }
   
   if (!user) {
-    if (typeof window !== 'undefined') router.push('/admin/login');
-    return null;
+    return null; // The useEffect handles redirection
   }
 
   if (!adminProfile && !isAdminProfileLoading) {
