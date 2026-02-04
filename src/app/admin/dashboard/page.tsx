@@ -143,14 +143,18 @@ export default function AdminDashboard() {
   const adminProfileRef = useMemoFirebase(() => user ? doc(db, 'admin_users', user.uid) : null, [db, user]);
   const { data: adminProfile, isLoading: isAdminProfileLoading } = useDoc(adminProfileRef);
 
-  // hotelId from profile, or fallback to public one if seeding/initializing
-  const hotelId = adminProfile?.hotelId || PUBLIC_HOTEL_ID;
-  const hotelRef = useMemoFirebase(() => doc(db, 'hotels', hotelId), [db, hotelId]);
+  // Derived hotelId - only set if profile exists to prevent premature permission-restricted queries
+  const hotelId = adminProfile?.hotelId;
+  
+  // Hotel data is public, but we only load the specific one for this admin if available
+  const hotelRef = useMemoFirebase(() => {
+    if (hotelId) return doc(db, 'hotels', hotelId);
+    return doc(db, 'hotels', PUBLIC_HOTEL_ID);
+  }, [db, hotelId]);
+  
   const { data: hotelData } = useDoc(hotelRef);
 
-  const pagesCollectionRef = useMemoFirebase(() => hotelId ? collection(db, 'hotels', hotelId, 'pages') : null, [db, hotelId]);
-  const { data: pageContents } = useCollection(pagesCollectionRef);
-
+  // Sensitive sub-collections are ONLY queried if hotelId is derived from a valid adminProfile
   const bookingsQuery = useMemoFirebase(() => hotelId ? collection(db, 'hotels', hotelId, 'bookings') : null, [db, hotelId]);
   const { data: bookings } = useCollection(bookingsQuery);
 
@@ -159,6 +163,9 @@ export default function AdminDashboard() {
 
   const revenueQuery = useMemoFirebase(() => hotelId ? collection(db, 'hotels', hotelId, 'revenue') : null, [db, hotelId]);
   const { data: revenueData } = useCollection(revenueQuery);
+
+  const pagesCollectionRef = useMemoFirebase(() => hotelId ? collection(db, 'hotels', hotelId, 'pages') : null, [db, hotelId]);
+  const { data: pageContents } = useCollection(pagesCollectionRef);
 
   const filteredBookings = useMemo(() => {
     if (!bookings) return [];
@@ -299,6 +306,7 @@ export default function AdminDashboard() {
 
   if (!user) return null;
 
+  // If user is logged in but profile hasn't been created/verified, show the verification screen
   if (!adminProfile) {
     return (
       <div className="min-h-screen bg-[#f8fafc] flex flex-col items-center justify-center p-6 text-center">
