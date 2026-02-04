@@ -13,7 +13,8 @@ import {
   LogOut, 
   Bell,
   Search,
-  ChevronDown
+  ChevronDown,
+  Loader2 as Loader2Icon
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,7 +30,8 @@ import {
 import { 
   ChartContainer, 
   ChartTooltip, 
-  ChartTooltipContent 
+  ChartTooltipContent,
+  type ChartConfig
 } from '@/components/ui/chart';
 import { 
   BarChart, 
@@ -43,6 +45,13 @@ import {
 } from 'recharts';
 import { useRouter } from 'next/navigation';
 import { getAuth, signOut } from 'firebase/auth';
+
+const chartConfig = {
+  revenue: {
+    label: "Revenue",
+    color: "hsl(var(--primary))",
+  },
+} satisfies ChartConfig;
 
 export default function AdminDashboard() {
   const { user, isUserLoading } = useUser();
@@ -85,7 +94,8 @@ export default function AdminDashboard() {
     router.push('/admin/login');
   };
 
-  if (isUserLoading) return <div className="min-h-screen flex items-center justify-center"><Loader2 className="animate-spin" /></div>;
+  if (isUserLoading) return <div className="min-h-screen flex items-center justify-center"><Loader2Icon className="animate-spin h-8 w-8 text-primary" /></div>;
+  
   if (!user) {
     if (typeof window !== 'undefined') router.push('/admin/login');
     return null;
@@ -203,7 +213,7 @@ export default function AdminDashboard() {
               </Button>
             </CardHeader>
             <div className="h-[350px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
+              <ChartContainer config={chartConfig}>
                 <AreaChart data={chartData}>
                   <defs>
                     <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
@@ -224,7 +234,7 @@ export default function AdminDashboard() {
                     fill="url(#colorRev)" 
                   />
                 </AreaChart>
-              </ResponsiveContainer>
+              </ChartContainer>
             </div>
           </Card>
 
@@ -272,9 +282,3 @@ export default function AdminDashboard() {
     </div>
   );
 }
-
-function Loader2({ className }: { className?: string }) {
-  return <Loader2Icon className={`animate-spin ${className}`} />;
-}
-
-import { Loader2 as Loader2Icon } from 'lucide-react';
