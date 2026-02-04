@@ -2,6 +2,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/firebase';
 import { signInWithEmailAndPassword } from 'firebase/auth';
@@ -9,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, Lock, Mail, Palmtree, Eye, EyeOff, ShieldAlert } from 'lucide-react';
+import { Loader2, Lock, Mail, Palmtree, Eye, EyeOff, ShieldAlert, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export default function AdminLoginPage() {
@@ -44,7 +45,17 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0f172a] flex items-center justify-center p-6">
+    <div className="min-h-screen bg-[#0f172a] flex flex-col items-center justify-center p-6">
+      <div className="mb-8 self-start max-w-md mx-auto w-full">
+        <Link 
+          href="/" 
+          className="text-white/50 hover:text-white transition-colors flex items-center gap-2 text-sm font-bold uppercase tracking-widest"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Website
+        </Link>
+      </div>
+
       <Card className="w-full max-w-md border-none shadow-2xl rounded-[2.5rem] overflow-hidden bg-white">
         <div className="bg-primary p-10 text-white text-center">
           <div className="inline-flex p-4 bg-white/10 rounded-2xl mb-6">
