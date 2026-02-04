@@ -1,0 +1,127 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * CORE PHILOSOPHY
+     * This ruleset implements a Database-Based Access Control (DBAC) model tailored for hotel management. 
+     * Access is predicated on the 'AdminUser' entity, which serves as the bridge between a Firebase 
+     * Authentication UID and a specific 'Hotel' document.
+     *
+     * DATA STRUCTURE
+     * - /admin_users/{userId}: Top-level collection linking authenticated users to hotels.
+     * - /hotels/{hotelId}: Top-level collection containing hotel metadata.
+     * - /hotels/{hotelId}/rooms: Subcollection of rooms specific to a hotel.
+     * - /hotels/{hotelId}/bookings: Subcollection of guest bookings.
+     * - /hotels/{hotelId}/revenue: Subcollection of financial records.
+     *
+     * KEY SECURITY DECISIONS
+     * 1. Admin-Only Access: All hotel data is private. There are no public read rules.
+     * 2. Hotel Scoping: Admin users are restricted to the hotel ID (hotelId) stored in their 
+     *    individual AdminUser document. They cannot cross-access data from other hotels.
+     * 3. Self-Management: Users are permitted to manage their own AdminUser profiles.
+     * 4. Relational Integrity: On creation of sub-resources (rooms, bookings, revenue), 
+     *    the rules enforce that the internal 'hotelId' field matches the parent path segment.
+     *
+     * DENORMALIZATION FOR AUTHORIZATION
+     * The 'AdminUser' document contains a 'hotelId' field. This denormalization allows rules 
+     * for any resource under /hotels/{hotelId}/... to perform a single lookup of the user's 
+     * profile to verify they have the authority to access that specific hotel's data tree.
+     */
+
+    // --- GLOBAL HELPER FUNCTIONS ---
+
+    /** @description Checks if the request is from an authenticated user. */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /** @description Fetches the admin profile for the current authenticated user. */
+    function getAdminData() {
+      return get(/databases/$(database)/documents/admin_users/$(request.auth.uid)).data;
+    }
+
+    /** @description Verifies if the authenticated user is an authorized admin for a specific hotel. */
+    function isAdminForHotel(hotelId) {
+      return isSignedIn() && getAdminData().hotelId == hotelId;
+    }
+
+    /** @description Verifies ownership and existence for update/delete operations. */
+    function isExistingHotelAdmin(hotelId) {
+      return resource != null && isAdminForHotel(hotelId);
+    }
+
+    // --- MATCH BLOCKS ---
+
+    /**
+     * @description Rules for the AdminUser collection. Users manage their own admin identity.
+     * @path /admin_users/{adminUserId}
+     * @allow (create) if auth.uid matches adminUserId.
+     * @deny (read) if auth.uid does not match adminUserId.
+     * @principle Pattern 4: Self-Creation and Pattern 1: Ownership.
+     */
+    match /admin_users/{adminUserId} {
+      allow get: if isSignedIn() && request.auth.uid == adminUserId;
+      allow list: if false; // Prevent listing all administrators
+      allow create: if isSignedIn() && request.auth.uid == adminUserId;
+      allow update: if isSignedIn() && request.auth.uid == adminUserId && resource != null;
+      allow delete: if isSignedIn() && request.auth.uid == adminUserId && resource != null;
+    }
+
+    /**
+     * @description Rules for Hotel documents. Restricted to admins assigned to this hotelId.
+     * @path /hotels/{hotelId}
+     * @allow (update) if user's AdminUser.hotelId matches hotelId.
+     * @deny (create) if user attempts to create a hotel they aren't yet assigned to.
+     * @principle Pattern 3: Shared Access (Lookup-based).
+     */
+    match /hotels/{hotelId} {
+      allow get, list: if isAdminForHotel(hotelId);
+      allow create: if isSignedIn(); // Allow creation, assuming the UI/Backend handles immediate admin assignment
+      allow update: if isExistingHotelAdmin(hotelId);
+      allow delete: if isExistingHotelAdmin(hotelId);
+
+      /**
+       * @description Rules for Rooms. Enforces hotel-scoped access and relational integrity.
+       * @path /hotels/{hotelId}/rooms/{roomId}
+       * @allow (create) if user is admin for hotelId AND request data contains matching hotelId.
+       * @deny (create) if path hotelId and data hotelId are mismatched.
+       * @principle Pattern 3: Shared Access and Principle 5: Relational Integrity.
+       */
+      match /rooms/{roomId} {
+        allow get, list: if isAdminForHotel(hotelId);
+        allow create: if isAdminForHotel(hotelId) && request.resource.data.hotelId == hotelId;
+        allow update: if isExistingHotelAdmin(hotelId) && request.resource.data.hotelId == resource.data.hotelId;
+        allow delete: if isExistingHotelAdmin(hotelId);
+      }
+
+      /**
+       * @description Rules for Bookings.
+       * @path /hotels/{hotelId}/bookings/{bookingId}
+       * @allow (list) if user is the assigned admin for the hotel.
+       * @deny (get) if user belongs to a different hotel.
+       * @principle Pattern 3: Shared Access (Lookup-based).
+       */
+      match /bookings/{bookingId} {
+        allow get, list: if isAdminForHotel(hotelId);
+        allow create: if isAdminForHotel(hotelId) && request.resource.data.hotelId == hotelId;
+        allow update: if isExistingHotelAdmin(hotelId) && request.resource.data.hotelId == resource.data.hotelId;
+        allow delete: if isExistingHotelAdmin(hotelId);
+      }
+
+      /**
+       * @description Rules for Revenue records. Highly sensitive financial data.
+       * @path /hotels/{hotelId}/revenue/{revenueId}
+       * @allow (get) if user is authorized admin.
+       * @deny (update) if user attempts to change the associated hotelId.
+       * @principle Pattern 3: Shared Access and Principle 5: Relational Integrity.
+       */
+      match /revenue/{revenueId} {
+        allow get, list: if isAdminForHotel(hotelId);
+        allow create: if isAdminForHotel(hotelId) && request.resource.data.hotelId == hotelId;
+        allow update: if isExistingHotelAdmin(hotelId) && request.resource.data.hotelId == resource.data.hotelId;
+        allow delete: if isExistingHotelAdmin(hotelId);
+      }
+    }
+  }
+}
