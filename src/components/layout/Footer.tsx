@@ -1,9 +1,18 @@
 
+'use client';
+
 import React from 'react';
 import Link from 'next/link';
-import { Facebook, Instagram, Twitter, MapPin, Phone, Mail, Palmtree } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { Facebook, Instagram, Twitter, MapPin, Phone, Mail } from 'lucide-react';
 
 const Footer = () => {
+  const pathname = usePathname();
+  const isAdminPage = pathname?.startsWith('/admin');
+
+  // Do not render footer on admin pages
+  if (isAdminPage) return null;
+
   return (
     <footer className="bg-primary text-white py-20 px-6">
       <div className="max-w-7xl mx-auto grid md:grid-cols-4 gap-12">

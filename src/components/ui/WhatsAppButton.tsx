@@ -1,9 +1,17 @@
+
 "use client";
 
 import React from 'react';
+import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 
 const WhatsAppButton = () => {
+  const pathname = usePathname();
+  const isAdminPage = pathname?.startsWith('/admin');
+
+  // Do not show WhatsApp button on admin pages
+  if (isAdminPage) return null;
+
   const handleWhatsAppClick = () => {
     const phoneNumber = "254123456789"; // Replace with actual Kenyan hotel number
     const message = encodeURIComponent("Jambo! I would like to inquire about a booking at Coastal Sands Retreat.");
