@@ -1,3 +1,4 @@
+
 "use client";
 
 import React from 'react';
@@ -5,7 +6,7 @@ import Image from 'next/image';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Waves, Coffee, Bath, Wind, Loader2 } from 'lucide-react';
+import { Waves, Coffee, Bath, Wind, Loader2, Sparkles } from 'lucide-react';
 import BookingForm from '@/components/booking/BookingForm';
 import { cn } from '@/lib/utils';
 import { useCollection, useFirestore, useMemoFirebase } from '@/firebase';
@@ -23,9 +24,10 @@ export default function RoomsPage() {
   
   const { data: rooms, isLoading } = useCollection(roomsQuery);
 
-  // Filter maintenance rooms locally to avoid strict firestore indexing issues for new users
+  // Filter maintenance rooms locally to ensure high reliability across all sessions
   const availableRooms = React.useMemo(() => {
     if (!rooms) return [];
+    // Only show rooms that are explicitly NOT out_of_order
     return rooms.filter(room => room.status !== 'out_of_order');
   }, [rooms]);
 
@@ -68,7 +70,7 @@ export default function RoomsPage() {
                   <h2 className="text-4xl md:text-5xl font-headline font-bold text-primary mb-6 leading-tight">{room.roomType}</h2>
                   <p className="text-lg text-muted-foreground mb-10 leading-relaxed">{room.description || "A luxurious escape tailored for your comfort."}</p>
                   <div className="grid grid-cols-2 gap-x-8 gap-y-6 mb-12">
-                    {room.amenities?.split(',').slice(0, 4).map((amenity: string, i: number) => (
+                    {(room.amenities || "King Bed, Ocean View, Wi-Fi, Air Conditioning").split(',').slice(0, 4).map((amenity: string, i: number) => (
                       <div key={i} className="flex items-center gap-3">
                         <div className="p-2 bg-secondary/10 rounded-xl text-secondary">
                           {i === 0 ? <Waves className="h-5 w-5" /> : i === 1 ? <Coffee className="h-5 w-5" /> : i === 2 ? <Bath className="h-5 w-5" /> : <Wind className="h-5 w-5" />}
@@ -89,11 +91,13 @@ export default function RoomsPage() {
           ) : (
             <div className="text-center py-20 space-y-8 bg-white rounded-[3rem] shadow-xl border border-primary/5 p-12">
               <div className="h-20 w-20 bg-primary/10 rounded-3xl flex items-center justify-center mx-auto">
-                <Waves className="h-10 w-10 text-primary" />
+                <Sparkles className="h-10 w-10 text-primary" />
               </div>
               <div className="max-w-md mx-auto">
-                <p className="text-muted-foreground italic text-xl mb-6">No rooms currently available for online booking. Please check back soon or contact our concierge.</p>
-                <Button size="lg" className="rounded-2xl h-16 px-10 bg-primary font-bold shadow-xl shadow-primary/20">Contact Concierge Directly</Button>
+                <p className="text-muted-foreground italic text-xl mb-6">Our inventory is currently being updated for the upcoming season. Please check back soon.</p>
+                <Button size="lg" className="rounded-2xl h-16 px-10 bg-primary font-bold shadow-xl shadow-primary/20" asChild>
+                  <a href="mailto:stay@coastalsands.com">Inquire Directly</a>
+                </Button>
               </div>
             </div>
           )}
