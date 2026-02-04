@@ -11,9 +11,7 @@ import {
   DollarSign, 
   Hotel, 
   LogOut, 
-  Bell,
   Search,
-  ChevronDown,
   Loader2 as Loader2Icon,
   LayoutDashboard,
   Settings,
@@ -26,7 +24,8 @@ import {
   Clock,
   Edit,
   FileText,
-  MessageSquare
+  MessageSquare,
+  Menu as MenuIcon
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -71,6 +70,13 @@ import {
   DialogFooter,
   DialogDescription
 } from '@/components/ui/dialog';
+import { 
+  Sheet, 
+  SheetContent, 
+  SheetHeader, 
+  SheetTitle, 
+  SheetTrigger 
+} from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -85,7 +91,7 @@ const chartConfig = {
   },
 } satisfies ChartConfig;
 
-type ViewState = 'overview' | 'bookings' | 'rooms' | 'guests';
+type ViewState = 'overview' | 'bookings' | 'profile' | 'rooms' | 'guests';
 
 export default function AdminDashboard() {
   const { user, isUserLoading } = useUser();
@@ -95,6 +101,7 @@ export default function AdminDashboard() {
   const [activeView, setActiveView] = useState<ViewState>('overview');
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   
   // Filters
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -215,53 +222,61 @@ export default function AdminDashboard() {
     { name: 'Jun', revenue: 5500 },
   ];
 
+  const NavContent = () => (
+    <nav className="space-y-2 flex-grow">
+      <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-4 ml-2">Main Menu</p>
+      <Button 
+        variant="ghost" 
+        onClick={() => { setActiveView('overview'); setIsMobileMenuOpen(false); }}
+        className={cn(
+          "w-full justify-start text-white hover:bg-white/10 rounded-xl h-12 font-bold transition-all",
+          activeView === 'overview' ? "bg-white/10" : "bg-transparent"
+        )}
+      >
+        <LayoutDashboard className="mr-3 h-5 w-5 text-secondary" /> Overview
+      </Button>
+      <Button 
+        variant="ghost" 
+        onClick={() => { setActiveView('bookings'); setIsMobileMenuOpen(false); }}
+        className={cn(
+          "w-full justify-start text-white/60 hover:bg-white/10 hover:text-white rounded-xl h-12 transition-all",
+          activeView === 'bookings' ? "bg-white/10 text-white" : ""
+        )}
+      >
+        <Calendar className="mr-3 h-5 w-5" /> All Bookings
+      </Button>
+      <Button 
+        variant="ghost" 
+        onClick={() => { setActiveView('profile'); setIsMobileMenuOpen(false); }}
+        className={cn(
+          "w-full justify-start text-white/60 hover:bg-white/10 hover:text-white rounded-xl h-12 transition-all",
+          activeView === 'profile' ? "bg-white/10 text-white" : ""
+        )}
+      >
+        <UserIcon className="mr-3 h-5 w-5" /> My Profile
+      </Button>
+      
+      <div className="pt-8">
+        <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-4 ml-2">System</p>
+        <Button variant="ghost" className="w-full justify-start text-white/60 hover:bg-white/10 hover:text-white rounded-xl h-12">
+          <Settings className="mr-3 h-5 w-5" /> Settings
+        </Button>
+      </div>
+    </nav>
+  );
+
   return (
     <div className="min-h-screen bg-[#f8fafc]">
-      {/* Sidebar Navigation */}
+      {/* Sidebar Navigation - Desktop */}
       <div className="fixed left-0 top-0 bottom-0 w-72 bg-[#0f172a] text-white p-8 hidden lg:flex flex-col">
         <div className="mb-12">
           <h2 className="text-2xl font-headline font-bold tracking-tight">COASTAL SANDS</h2>
           <p className="text-[10px] text-secondary font-bold tracking-[0.3em] uppercase mt-1">Management Suite</p>
         </div>
         
-        <nav className="space-y-2 flex-grow">
-          <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-4 ml-2">Main Menu</p>
-          <Button 
-            variant="ghost" 
-            onClick={() => setActiveView('overview')}
-            className={cn(
-              "w-full justify-start text-white hover:bg-white/10 rounded-xl h-12 font-bold transition-all",
-              activeView === 'overview' ? "bg-white/10" : "bg-transparent"
-            )}
-          >
-            <LayoutDashboard className="mr-3 h-5 w-5 text-secondary" /> Overview
-          </Button>
-          <Button 
-            variant="ghost" 
-            onClick={() => setActiveView('bookings')}
-            className={cn(
-              "w-full justify-start text-white/60 hover:bg-white/10 hover:text-white rounded-xl h-12 transition-all",
-              activeView === 'bookings' ? "bg-white/10 text-white" : ""
-            )}
-          >
-            <Calendar className="mr-3 h-5 w-5" /> All Bookings
-          </Button>
-          <Button variant="ghost" className="w-full justify-start text-white/60 hover:bg-white/10 hover:text-white rounded-xl h-12">
-            <Hotel className="mr-3 h-5 w-5" /> Room Inventory
-          </Button>
-          <Button variant="ghost" className="w-full justify-start text-white/60 hover:bg-white/10 hover:text-white rounded-xl h-12">
-            <Users className="mr-3 h-5 w-5" /> Guest Relations
-          </Button>
-          
-          <div className="pt-8">
-            <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest mb-4 ml-2">System</p>
-            <Button variant="ghost" className="w-full justify-start text-white/60 hover:bg-white/10 hover:text-white rounded-xl h-12">
-              <Settings className="mr-3 h-5 w-5" /> Settings
-            </Button>
-          </div>
-        </nav>
+        <NavContent />
 
-        {/* Profile Section */}
+        {/* Profile Sidebar Section */}
         <div className="pt-8 border-t border-white/10">
           <div className="flex items-center gap-4 mb-6 px-2">
             <Avatar className="h-12 w-12 border-2 border-secondary shadow-lg">
@@ -285,28 +300,57 @@ export default function AdminDashboard() {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="lg:ml-72 p-10">
+      {/* Main Content Area */}
+      <div className="lg:ml-72 p-6 md:p-10">
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
-          <div>
-            <h1 className="text-4xl font-headline font-bold text-[#0f172a]">
-              {activeView === 'overview' ? "Operations Overview" : "Booking Management"}
-            </h1>
-            <p className="text-muted-foreground mt-1 flex items-center gap-2">
-              <Hotel className="h-4 w-4" /> {hotelData?.name || "Coastal Sands Retreat"} • {adminProfile?.role || "Manager"}
-            </p>
-          </div>
           <div className="flex items-center gap-4 w-full md:w-auto">
-            <div className="relative flex-grow md:flex-grow-0">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <input 
-                placeholder="Search guests or emails..." 
-                className="pl-12 h-12 w-full md:w-72 rounded-2xl border-none bg-white shadow-sm focus:ring-2 focus:ring-primary/20 transition-all"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
+            {/* Mobile Menu Toggle */}
+            <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+              <SheetTrigger asChild>
+                <Button variant="outline" size="icon" className="lg:hidden rounded-xl border-slate-200">
+                  <MenuIcon className="h-5 w-5 text-slate-600" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="bg-[#0f172a] border-none text-white p-8 w-72">
+                <SheetHeader className="mb-10 text-left">
+                  <SheetTitle className="text-white font-headline text-2xl">COASTAL SANDS</SheetTitle>
+                </SheetHeader>
+                <NavContent />
+                <div className="mt-auto pt-8 border-t border-white/10">
+                   <Button 
+                    variant="outline" 
+                    className="w-full border-white/10 bg-white/5 text-white hover:bg-white/10 rounded-xl h-12" 
+                    onClick={handleLogout}
+                  >
+                    <LogOut className="mr-3 h-4 w-4" /> Sign Out
+                  </Button>
+                </div>
+              </SheetContent>
+            </Sheet>
+
+            <div>
+              <h1 className="text-3xl md:text-4xl font-headline font-bold text-[#0f172a]">
+                {activeView === 'overview' ? "Operations Overview" : activeView === 'bookings' ? "Booking Management" : "Account Profile"}
+              </h1>
+              <p className="text-muted-foreground mt-1 flex items-center gap-2">
+                <Hotel className="h-4 w-4" /> {hotelData?.name || "Coastal Sands Retreat"} • {adminProfile?.role || "Manager"}
+              </p>
             </div>
           </div>
+
+          {activeView !== 'profile' && (
+            <div className="flex items-center gap-4 w-full md:w-auto">
+              <div className="relative flex-grow md:flex-grow-0">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <input 
+                  placeholder="Search guests or emails..." 
+                  className="pl-12 h-12 w-full md:w-72 rounded-2xl border-none bg-white shadow-sm focus:ring-2 focus:ring-primary/20 transition-all"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
         </header>
 
         {activeView === 'overview' && (
@@ -394,26 +438,26 @@ export default function AdminDashboard() {
             <Card className="border-none shadow-sm rounded-[2.5rem] bg-white p-10 overflow-hidden">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
                 <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2 bg-slate-50 p-1 rounded-xl">
+                  <div className="flex items-center gap-2 bg-slate-50 p-1 rounded-xl overflow-x-auto max-w-[calc(100vw-4rem)]">
                     {['all', 'confirmed', 'pending', 'cancelled'].map((status) => (
                       <Button
                         key={status}
                         variant={statusFilter === status ? 'default' : 'ghost'}
                         size="sm"
                         onClick={() => setStatusFilter(status)}
-                        className={cn("rounded-lg font-bold capitalize transition-all", statusFilter === status ? "bg-primary text-white" : "text-muted-foreground")}
+                        className={cn("rounded-lg font-bold capitalize transition-all shrink-0", statusFilter === status ? "bg-primary text-white" : "text-muted-foreground")}
                       >
                         {status}
                       </Button>
                     ))}
                   </div>
                 </div>
-                <Button variant="outline" className="rounded-xl gap-2 font-bold">
+                <Button variant="outline" className="rounded-xl gap-2 font-bold w-full md:w-auto">
                   <Filter className="h-4 w-4" /> Filter by Date
                 </Button>
               </div>
 
-              <div className="rounded-2xl border border-slate-100">
+              <div className="rounded-2xl border border-slate-100 overflow-x-auto">
                 <Table>
                   <TableHeader className="bg-slate-50/50">
                     <TableRow className="border-none">
@@ -536,9 +580,58 @@ export default function AdminDashboard() {
           </div>
         )}
 
+        {activeView === 'profile' && (
+          <div className="max-w-2xl mx-auto">
+            <Card className="border-none shadow-sm rounded-[2.5rem] bg-white overflow-hidden">
+              <div className="bg-primary p-12 text-center text-white relative">
+                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -mr-16 -mt-16 blur-2xl" />
+                 <Avatar className="h-32 w-32 border-4 border-white mx-auto mb-6 shadow-2xl">
+                    <AvatarImage src={`https://picsum.photos/seed/${user.uid}/200/200`} />
+                    <AvatarFallback className="bg-secondary text-white text-4xl font-headline font-bold">
+                      {adminProfile?.username?.[0] || 'A'}
+                    </AvatarFallback>
+                 </Avatar>
+                 <h2 className="text-3xl font-headline font-bold mb-2">{adminProfile?.username}</h2>
+                 <p className="text-white/70 font-medium">{adminProfile?.role} • {hotelData?.name}</p>
+              </div>
+              <CardContent className="p-10 space-y-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                   <div className="space-y-2">
+                     <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Full Name</p>
+                     <p className="text-lg font-bold text-slate-900">{adminProfile?.username}</p>
+                   </div>
+                   <div className="space-y-2">
+                     <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">System Email</p>
+                     <p className="text-lg font-bold text-slate-900">{user.email}</p>
+                   </div>
+                   <div className="space-y-2">
+                     <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Assigned Hotel ID</p>
+                     <p className="text-sm font-mono text-slate-500 bg-slate-50 p-2 rounded-lg">{adminProfile?.hotelId}</p>
+                   </div>
+                   <div className="space-y-2">
+                     <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Authorization Level</p>
+                     <Badge className="bg-primary/10 text-primary font-bold">{adminProfile?.role}</Badge>
+                   </div>
+                </div>
+                
+                <DropdownMenuSeparator className="my-8" />
+                
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <Button className="flex-1 h-14 rounded-xl font-bold bg-primary text-white shadow-lg shadow-primary/20">
+                    Edit Profile Details
+                  </Button>
+                  <Button onClick={handleLogout} variant="outline" className="flex-1 h-14 rounded-xl font-bold border-red-100 text-red-600 hover:bg-red-50 hover:text-red-700">
+                    <LogOut className="mr-2 h-5 w-5" /> Sign Out from Dashboard
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {/* Edit Booking Modal */}
         <Dialog open={isEditModalOpen} onOpenChange={setIsEditModalOpen}>
-          <DialogContent className="sm:max-w-[500px] rounded-[2.5rem] border-none shadow-2xl p-10">
+          <DialogContent className="sm:max-w-[500px] rounded-[2.5rem] border-none shadow-2xl p-6 md:p-10">
             <DialogHeader className="mb-6">
               <DialogTitle className="text-3xl font-headline font-bold text-primary">Modify Reservation</DialogTitle>
               <DialogDescription className="text-muted-foreground">Adjust stay details for {selectedBooking?.guestName}</DialogDescription>
