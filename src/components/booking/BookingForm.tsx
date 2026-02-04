@@ -18,9 +18,11 @@ import {
   ShieldCheck,
   Palmtree,
   PlaneLanding,
-  PlaneTakeoff
+  PlaneTakeoff,
+  Printer,
+  Download
 } from 'lucide-react';
-import { format, startOfToday, isBefore, addDays, isAfter } from 'date-fns';
+import { format, startOfToday, isBefore, addDays } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -54,7 +56,7 @@ const BookingForm = ({ layout = 'vertical' }: BookingFormProps) => {
 
   const isHorizontal = layout === 'horizontal';
 
-  // Ensure dates are correctly reset if logic is violated
+  // Logic to ensure departure is always after arrival
   useEffect(() => {
     if (arrivalDate && departureDate && (isBefore(departureDate, arrivalDate) || departureDate.getTime() === arrivalDate.getTime())) {
       setDepartureDate(addDays(arrivalDate, 1));
@@ -67,8 +69,8 @@ const BookingForm = ({ layout = 'vertical' }: BookingFormProps) => {
     if (!arrivalDate || !departureDate) {
       toast({
         variant: "destructive",
-        title: "Selection Required",
-        description: "Please select both arrival and departure dates to check availability.",
+        title: "Missing Dates",
+        description: "Please select both arrival and departure dates to proceed.",
       });
       return;
     }
@@ -76,6 +78,7 @@ const BookingForm = ({ layout = 'vertical' }: BookingFormProps) => {
     setStep('checking');
     setProgress(33);
     
+    // Simulate availability check
     setTimeout(() => {
       setStep('payment');
       setProgress(66);
@@ -87,6 +90,7 @@ const BookingForm = ({ layout = 'vertical' }: BookingFormProps) => {
     setStep('checking');
     setProgress(85);
     
+    // Simulate payment processing
     setTimeout(() => {
       setStep('success');
       setProgress(100);
@@ -137,6 +141,7 @@ const BookingForm = ({ layout = 'vertical' }: BookingFormProps) => {
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
+                    type="button"
                     className={cn(
                       "w-full justify-start text-left font-bold h-16 border-primary/15 bg-white hover:bg-primary/[0.02] rounded-2xl transition-all shadow-sm text-lg px-6",
                       !arrivalDate && "text-muted-foreground"
@@ -148,20 +153,17 @@ const BookingForm = ({ layout = 'vertical' }: BookingFormProps) => {
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.15)] border-none z-[100]" align="start">
                   <div className="p-4 bg-primary text-white text-center rounded-t-[2.5rem] font-headline font-bold">
-                    Arrival Date
+                    Select Arrival Date
                   </div>
                   <Calendar
                     mode="single"
                     selected={arrivalDate}
                     onSelect={(d) => {
-                      if (d) {
-                        setArrivalDate(d);
-                        setArrivalOpen(false);
-                      }
+                      setArrivalDate(d);
+                      if (d) setArrivalOpen(false);
                     }}
                     disabled={(date) => isBefore(date, startOfToday())}
-                    initialFocus
-                    className="rounded-b-[2.5rem] bg-white"
+                    className="rounded-b-[2.5rem] bg-white p-6"
                   />
                 </PopoverContent>
               </Popover>
@@ -177,6 +179,7 @@ const BookingForm = ({ layout = 'vertical' }: BookingFormProps) => {
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
+                    type="button"
                     className={cn(
                       "w-full justify-start text-left font-bold h-16 border-primary/15 bg-white hover:bg-primary/[0.02] rounded-2xl transition-all shadow-sm text-lg px-6",
                       !departureDate && "text-muted-foreground"
@@ -188,22 +191,19 @@ const BookingForm = ({ layout = 'vertical' }: BookingFormProps) => {
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0 rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.15)] border-none z-[100]" align="start">
                   <div className="p-4 bg-primary text-white text-center rounded-t-[2.5rem] font-headline font-bold">
-                    Departure Date
+                    Select Departure Date
                   </div>
                   <Calendar
                     mode="single"
                     selected={departureDate}
                     onSelect={(d) => {
-                      if (d) {
-                        setDepartureDate(d);
-                        setDepartureOpen(false);
-                      }
+                      setDepartureDate(d);
+                      if (d) setDepartureOpen(false);
                     }}
                     disabled={(date) => 
                       isBefore(date, arrivalDate ? addDays(arrivalDate, 1) : startOfToday())
                     }
-                    initialFocus
-                    className="rounded-b-[2.5rem] bg-white"
+                    className="rounded-b-[2.5rem] bg-white p-6"
                   />
                 </PopoverContent>
               </Popover>
@@ -439,7 +439,7 @@ const BookingForm = ({ layout = 'vertical' }: BookingFormProps) => {
             
             <h3 className="text-5xl md:text-6xl font-headline font-bold text-primary text-center mb-4">Welcome Home!</h3>
             <p className="text-muted-foreground text-center mb-16 max-w-sm mx-auto leading-relaxed text-lg">
-              Your stay at Diani Beach is officially confirmed. A digital itinerary has been sent to your email.
+              Your stay at Diani Beach is officially confirmed. Your digital reservation and receipt are ready below.
             </p>
 
             <div className="w-full max-w-md bg-white border-[3px] border-dashed border-primary/25 rounded-[3.5rem] overflow-hidden shadow-2xl hover:shadow-primary/10 transition-all group">
@@ -459,7 +459,7 @@ const BookingForm = ({ layout = 'vertical' }: BookingFormProps) => {
                     <p className="font-bold uppercase text-xs text-secondary bg-secondary/10 px-4 py-2 rounded-full tracking-widest">{paymentMethod}</p>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-12">
+                <div className="grid grid-cols-2 gap-12 border-b border-primary/10 pb-10">
                   <div>
                     <p className="text-[11px] uppercase font-bold text-muted-foreground mb-2">Check In</p>
                     <p className="font-bold text-xl text-primary">{arrivalDate ? format(arrivalDate, "MMM dd, yyyy") : "Pending"}</p>
@@ -469,20 +469,30 @@ const BookingForm = ({ layout = 'vertical' }: BookingFormProps) => {
                     <p className="font-bold text-xl text-primary">{departureDate ? format(departureDate, "MMM dd, yyyy") : "Pending"}</p>
                   </div>
                 </div>
+                <div className="flex justify-between items-center bg-muted/20 p-6 rounded-2xl">
+                  <span className="text-[11px] font-bold uppercase text-muted-foreground">Total Paid</span>
+                  <span className="text-2xl font-bold text-secondary">$250.00</span>
+                </div>
               </div>
               <div className="bg-muted/40 p-8 text-center text-[11px] text-muted-foreground uppercase tracking-[0.5em] font-bold border-t-2 border-dashed border-primary/10">
                 Coastal Sands • Diani Beach
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-8 mt-20">
-              <Button onClick={() => window.print()} variant="outline" className="rounded-full px-12 h-16 border-primary/20 text-primary font-bold hover:bg-primary/5 text-lg">
-                Print Confirmation
+            <div className="flex flex-col sm:flex-row gap-6 mt-16 w-full max-w-md">
+              <Button onClick={() => window.print()} className="flex-1 h-16 rounded-full bg-primary text-white font-bold gap-3 shadow-xl">
+                <Printer className="h-5 w-5" />
+                Print Receipt
               </Button>
-              <Button onClick={resetBooking} variant="link" className="text-primary font-bold hover:text-secondary transition-colors text-lg underline-offset-8">
-                Make Another Reservation
+              <Button variant="outline" className="flex-1 h-16 rounded-full border-primary/20 text-primary font-bold gap-3">
+                <Download className="h-5 w-5" />
+                Download PDF
               </Button>
             </div>
+            
+            <Button onClick={resetBooking} variant="link" className="mt-10 text-primary font-bold hover:text-secondary transition-colors text-lg underline-offset-8">
+              Make Another Reservation
+            </Button>
           </motion.div>
         )}
       </AnimatePresence>
