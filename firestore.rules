@@ -23,7 +23,9 @@ service cloud.firestore {
     }
 
     function isAdminForHotel(hotelId) {
-      return isSignedIn() && getAdminData().hotelId == hotelId;
+      return isSignedIn() && 
+             exists(/databases/$(database)/documents/admin_users/$(request.auth.uid)) &&
+             getAdminData().hotelId == hotelId;
     }
 
     function isExistingHotelAdmin(hotelId) {
@@ -64,15 +66,15 @@ service cloud.firestore {
       match /bookings/{bookingId} {
         allow get, list: if isAdminForHotel(hotelId);
         allow create: if true; // Allow guests to book
-        allow update: if isExistingHotelAdmin(hotelId) || (isSignedIn() && resource.data.guestEmail == request.auth.token.email);
-        allow delete: if isExistingHotelAdmin(hotelId);
+        allow update: if isAdminForHotel(hotelId) || (isSignedIn() && resource.data.guestEmail == request.auth.token.email);
+        allow delete: if isAdminForHotel(hotelId);
       }
 
       match /revenue/{revenueId} {
         allow get, list: if isAdminForHotel(hotelId);
         allow create: if isAdminForHotel(hotelId) && request.resource.data.hotelId == hotelId;
-        allow update: if isExistingHotelAdmin(hotelId) && request.resource.data.hotelId == resource.data.hotelId;
-        allow delete: if isExistingHotelAdmin(hotelId);
+        allow update: if isAdminForHotel(hotelId) && request.resource.data.hotelId == resource.data.hotelId;
+        allow delete: if isAdminForHotel(hotelId);
       }
     }
   }
